@@ -163,11 +163,38 @@ def main():
 
     print('팁개념 %d개, 개념 %d개 읽음' % (len(tips), len(pages)))
     out = os.path.join(ROOT, 'content-data.json')
-    json.dump({'tips': tips, 'pages': pages}, open(out,'w',encoding='utf-8'),
-              ensure_ascii=False, indent=1)
+    data = {'tips': tips, 'pages': pages}
+    json.dump(data, open(out,'w',encoding='utf-8'), ensure_ascii=False, indent=1)
     print('중간 산출물:', out)
-    print('\n다음 단계: 이 JSON을 index.html에 반영하는 주입 단계는 다음 세션에서 붙입니다.')
-    print('지금은 md 문법이 맞는지 검사하고 데이터로 잘 바뀌는지 확인하는 용도입니다.')
+
+    inject(data)
+
+
+BEGIN = '/*DATA:BEGIN*/'
+END = '/*DATA:END*/'
+
+def inject(data):
+    """index.html의 DATA 마커 사이를 생성된 데이터로 갈아끼웁니다."""
+    if not os.path.exists(INDEX):
+        err('index.html이 없습니다')
+    src = open(INDEX, encoding='utf-8').read()
+    a = src.find(BEGIN)
+    b = src.find(END)
+    if a < 0 or b < 0 or b < a:
+        err('index.html에서 %s ... %s 마커를 찾지 못했습니다' % (BEGIN, END))
+
+    payload = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
+    # </script> 가 데이터 안에 들어가면 HTML 파싱이 깨지므로 escape
+    payload = payload.replace('</', '<\\/')
+    block = BEGIN + '\nvar DATA=' + payload + ';\n' + END
+
+    new = src[:a] + block + src[b+len(END):]
+    if new == src:
+        print('주입: 변경 없음 (내용 동일)')
+        return
+    with open(INDEX, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(new)
+    print('주입 완료: index.html (%d bytes)' % len(new))
 
 if __name__ == '__main__':
     main()

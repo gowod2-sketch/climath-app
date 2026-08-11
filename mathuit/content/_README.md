@@ -129,13 +129,27 @@ label_at: right
 
 ---
 
-## 3. 빌드
+## 3. 고치고 배포하기
+
+### 가장 쉬운 방법 — 웹 편집기
+
+https://math-tip-popup.netlify.app/editor.html
+
+파일을 골라 불러오고, 고치고, **"저장하고 배포"** 를 누르면 끝입니다.
+GitHub 커밋과 배포가 자동으로 됩니다. 이 폴더를 직접 만질 필요가 없습니다.
+
+### 직접 파일을 고쳤다면
 
 ```
 python3 build.py
 ```
 
-`content/` 를 읽어 `index.html` 안의 데이터 블록을 갈아끼웁니다.
-빌드가 끝나면 `math-tip-app.zip` 이 새로 만들어지고, 그걸 Netlify에 올리면 됩니다.
+`content/` 를 읽어 검사하고 `index.html` 안의 `/*DATA:BEGIN*/` 데이터 블록을 갈아끼웁니다.
+그 다음 커밋하고 push하면 Netlify가 자동으로 배포합니다.
+
+```
+git add -A && git commit -m "개념 수정" && git push
+```
 
 문법이 틀리면 빌드가 어디가 틀렸는지 알려주고 멈춥니다. 앱이 깨진 채로 배포되지 않습니다.
+이 검사는 Netlify에서도 똑같이 돌기 때문에, 편집기로 저장했더라도 잘못된 내용은 라이브에 나가지 않습니다.

@@ -94,6 +94,12 @@ body{background:var(--s0);color:var(--text);font-family:"Pretendard Variable",-a
 .toctitle{font-size:14px;font-weight:600;color:var(--text);}
 .tocitem.cur .toctitle{color:var(--accent);}
 .inkc{position:absolute;inset:0;width:100%;height:100%;touch-action:none;pointer-events:none;z-index:6;}
+.zoomwrap{transform-origin:0 0;will-change:transform;}
+.sheet.zoomed{overflow:hidden;touch-action:none;}
+.zoombadge{position:absolute;right:10px;top:8px;z-index:8;font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:999px;padding:3px 10px;opacity:0;transition:opacity .2s;pointer-events:none;}
+.zoombadge.on{opacity:1;}
+.toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:50;font-size:12px;font-weight:600;color:#fff;background:rgba(27,32,51,.88);border-radius:999px;padding:7px 14px;opacity:0;pointer-events:none;transition:opacity .25s;white-space:nowrap;}
+.toast.on{opacity:1;}
 body.pen .inkc{pointer-events:auto;}
 body.pen .tapzone{pointer-events:none;}
 body.pen .term{cursor:default;}
@@ -134,7 +140,6 @@ body.pen .inkbar{display:flex;}
     <div class="dots" id="dots"></div>
   </div>
   <div class="veil" id="veil"></div>
-  <div class="pop" id="pop"></div>
   <div class="guide" id="guide"><div class="guidecard">
     <h3>홈 화면에 앱으로 추가하기</h3>
     <div id="guideBody"></div>
@@ -145,7 +150,8 @@ body.pen .inkbar{display:flex;}
     <div id="tocBody"></div>
   </div></div>
   <div class="inkbar"><button id="inkUndo">되돌리기</button><button id="inkClear">이 장 지우기</button><button id="inkDone">읽기 모드</button></div>
-  <div class="hint" id="hint">좌우로 밀거나 화면 끝을 탭해서 넘기기 &middot; 파란 용어는 꾹 누르기</div>
+  <div class="toast" id="toast"></div>
+  <div class="hint" id="hint">좌우로 밀어 넘기기 &middot; 파란 용어 탭 &middot; 두 손가락으로 확대 &middot; 길게 눌러 필기</div>
 </div>
 <div class="qa">
   <span>넘김</span>
@@ -158,131 +164,33 @@ var N=12,X0=30,DX=22;
 function xs(i){return X0+i*DX;}
 function seq(f){var a=[];for(var n=1;n<=N;n++)a.push(f(n));return a;}
 function cl(v){return Math.max(12,Math.min(156,v));}
-var TIPS={
- sumval:{title:'급수의 합',cat:'팁개념',ic:'S',def:'부분합의 수열 <span class="v">S</span><sub class="v">n</sub>이 수렴할 때 그 극한값',
-  pts:seq(function(n){return 160-100*(1-Math.pow(0.5,n));}),lines:[60],lab:{x:288,y:52,a:'end',t:'S'},
-  steps:[{show:4,caption:'부분합 S₁, S₂, S₃ … 을 찍어요.'},{show:12,line:1,label:1,caption:'그 극한값 S가 급수의 합이에요.'}]},
- nthzero:{title:'일반항의 극한',cat:'팁개념',ic:'0',def:'급수가 수렴하면 반드시 <span class="v">a</span><sub class="v">n</sub> → <span class="m">0</span>',
-  pts:seq(function(n){return 150-90/n;}),lines:[150],lab:{x:288,y:143,a:'end',t:'aₙ → 0'},
-  steps:[{show:4,caption:'항 aₙ 을 순서대로 찍어요.'},{show:12,caption:'뒤로 갈수록 항이 점점 작아져요.'},{show:12,line:1,label:1,caption:'수렴하는 급수는 항이 0으로 가요.'}]},
- geoseries:{title:'등비급수',cat:'팁개념',ic:'&#8721;',def:'등비수열의 모든 항을 더한 급수. 합은 <span class="v">a</span><span class="m">/(1&minus;</span><span class="v">r</span><span class="m">)</span>',
-  pts:seq(function(n){return 155-95*(1-Math.pow(0.62,n));}),lines:[60],lab:{x:288,y:52,a:'end',t:'a /(1−r)'},
-  steps:[{show:3,caption:'첫째항부터 차례로 더해요.'},{show:12,caption:'|r| < 1 이라 더할수록 조금씩만 늘어요.'},{show:12,line:1,label:1,caption:'합이 a /(1−r) 에 수렴해요.'}]},
- firstterm:{title:'첫째항',cat:'팁개념',ic:'a',def:'수열의 맨 처음 항 <span class="v">a</span><sub class="m">1</sub>',
-  pts:seq(function(n){return 150-90*Math.pow(0.72,n-1);}),lines:[],lab:{x:60,y:44,a:'start',t:'여기가 첫째항'},
-  steps:[{show:1,label:1,caption:'가장 왼쪽 첫 점이 첫째항이에요.'},{show:12,caption:'이후 항은 공비 r 을 곱해 이어져요.'}]},
- linearity:{title:'극한의 기본 성질',cat:'팁개념',ic:'&#177;',def:'수렴하는 두 수열은 합·차·곱·몫의 극한을 따로 계산해도 된다',
-  pts:seq(function(n){return 70+70/n;}),lines:[70],lab:{x:288,y:62,a:'end',t:'각각의 극한으로'},
-  steps:[{show:6,caption:'두 수열이 각각 수렴한다고 하면'},{show:12,line:1,label:1,caption:'합·차·곱·몫도 각 극한값으로 계산돼요.'}]},
- indeterminate:{title:'부정형',cat:'팁개념',ic:'?',def:'∞/∞, ∞&minus;∞ 처럼 그대로는 값을 알 수 없는 꼴',
-  pts:seq(function(n){return 100+40*Math.sin(n*1.1)/n;}),lines:[100],lab:{x:288,y:92,a:'end',t:'변형해야 보임'},
-  steps:[{show:5,caption:'분자와 분모가 둘 다 커져요.'},{show:12,caption:'그대로는 값을 판단할 수 없어요.'},{show:12,line:1,label:1,caption:'최고차항으로 나누면 극한이 드러나요.'}]},
- degree:{title:'최고차항',cat:'팁개념',ic:'n',def:'다항식에서 차수가 가장 높은 항. 부정형 계산의 기준',
-  pts:seq(function(n){return 150-100*(1-1/(1+0.35*n));}),lines:[50],lab:{x:288,y:42,a:'end',t:'계수의 비'},
-  steps:[{show:5,caption:'분자·분모를 최고차항으로 나눠요.'},{show:12,line:1,label:1,caption:'차수가 같으면 계수의 비로 수렴해요.'}]},
- squeeze:{title:'샌드위치 정리',cat:'팁개념',ic:'&#8804;',def:'양쪽에서 조여오는 두 수열이 같은 값에 수렴하면 가운데도 그 값에 수렴',
-  pts:seq(function(n){return 90+40/n;}),lines:[90],lab:{x:160,y:44,a:'middle',t:'위아래가 같은 값으로'},
-  steps:[{show:4,caption:'가운데 수열을 위아래로 감싸요.'},{show:12,caption:'감싸는 두 수열이 같은 값으로 가면'},{show:12,line:1,label:1,caption:'가운데 수열도 그 값에 수렴해요.'}]},
- converge:{title:'수렴',cat:'팁개념',ic:'&#8594;',def:'<span class="v">n</span>이 한없이 커질 때 <span class="v">a</span><sub class="v">n</sub>이 한 값에 한없이 가까워짐',
-  pts:seq(function(n){return 60+80/n;}),lines:[60],lab:{x:288,y:52,a:'end',t:'y = L'},
-  steps:[{show:3,caption:'a₁, a₂, a₃ 을 순서대로 찍어요.'},{show:12,caption:'n이 커질수록 점들이 한 값으로 몰려가요.'},{show:12,line:1,caption:'다가가는 값을 점선 y = L 로 표시해요.'},{show:12,line:1,label:1,caption:'aₙ은 L에 한없이 가까워져요.'}]},
- limitvalue:{title:'극한값',cat:'팁개념',ic:'L',def:'수렴하는 수열이 한없이 가까워지는 그 값 <span class="v">L</span>',
-  pts:seq(function(n){return 60+80/n;}),lines:[60],lab:{x:288,y:52,a:'end',t:'y = L'},
-  steps:[{show:12,caption:'수렴하는 수열의 점을 모두 찍어요.'},{show:12,line:1,label:1,caption:'점들이 다가가는 그 값이 극한값이에요.'}]},
- diverge:{title:'발산',cat:'팁개념',ic:'&#8734;',def:'어떤 값에도 가까워지지 않음 (&#8734;, &minus;&#8734; 포함)',
-  pts:seq(function(n){return 152-10.5*n;}),lines:[],lab:{x:284,y:30,a:'end',t:'∞ 로'},
-  steps:[{show:3,caption:'처음 몇 항은 평범해 보여요.'},{show:8,caption:'n이 커질수록 값이 계속 커져요.'},{show:12,label:1,caption:'멈추지 않고 커져요 — 양의 무한대로 발산.'}]},
- oscillate:{title:'진동',cat:'팁개념',ic:'~',def:'수렴도 아니고 &#8734;, &minus;&#8734;로도 가지 않는 발산',
-  pts:seq(function(n){return n%2===1?136:64;}),lines:[64,136],lab:{x:160,y:104,a:'middle',t:'한 값에 머물지 않음'},
-  steps:[{show:4,caption:'항이 1과 −1을 번갈아 오가요.'},{show:12,line:1,caption:'n이 커져도 한 값에 가까워지지 않아요.'},{show:12,line:1,label:1,caption:'수렴도 무한대도 아닌 발산 — 진동.'}]},
- geoseq:{title:'등비수열',cat:'팁개념',ic:'r',def:'이웃한 두 항의 비가 일정한 수열',
-  pts:seq(function(n){return 150-90*Math.pow(0.72,n-1);}),lines:[150],lab:{x:288,y:143,a:'end',t:'공비 r 배씩'},
-  steps:[{show:4,caption:'각 항이 앞 항의 r배씩 변해요.'},{show:12,line:1,label:1,caption:'|r| < 1 이면 항이 0에 가까워져요.'}]},
- ratio:{title:'공비',cat:'팁개념',ic:'r',def:'등비수열에서 이웃한 두 항의 비',
-  pts:seq(function(n){return 150-90*Math.pow(0.72,n-1);}),lines:[150],lab:{x:160,y:40,a:'middle',t:'|r| < 1 → 0에 수렴'},
-  steps:[{show:6,caption:'r을 곱할 때마다 값이 줄어들어요.'},{show:12,line:1,label:1,caption:'|r| < 1이면 rⁿ은 0에 수렴해요.'}]},
- series:{title:'무한급수',cat:'팁개념',ic:'&#8721;',def:'수열의 모든 항을 끝없이 더한 것',
-  pts:seq(function(n){return 160-100*(1-Math.pow(0.5,n));}),lines:[60],lab:{x:288,y:52,a:'end',t:'합 S'},
-  steps:[{show:3,caption:'항을 하나씩 더해 부분합을 만들어요.'},{show:12,caption:'더할수록 부분합이 천천히 늘어요.'},{show:12,line:1,label:1,caption:'부분합이 S에 수렴하면 급수가 수렴.'}]},
- partial:{title:'부분합',cat:'팁개념',ic:'S',def:'첫째항부터 <span class="v">n</span>번째 항까지의 합',
-  pts:seq(function(n){return 160-100*(1-Math.pow(0.5,n));}),lines:[60],lab:{x:288,y:52,a:'end',t:'S'},
-  steps:[{show:5,caption:'S₁, S₂, S₃ … 을 차례로 그려요.'},{show:12,line:1,label:1,caption:'Sₙ의 극한이 곧 급수의 합이에요.'}]},
- partfrac:{title:'부분분수',cat:'팁개념',ic:'/',def:'1/(<span class="v">n</span>(<span class="v">n</span>+1)) 을 1/<span class="v">n</span> &minus; 1/(<span class="v">n</span>+1) 처럼 두 분수의 차로 쪼개는 것',
-  pts:seq(function(n){return 160-100*(1-Math.pow(0.5,n));}),lines:[60],lab:{x:288,y:52,a:'end',t:'Sₙ'},
-  steps:[{show:3,caption:'1/(1·2), 1/(2·3), 1/(3·4) … 를 부분분수로 쪼개요.'},{show:8,caption:'각 항이 1/n &minus; 1/(n+1) 로 바뀌어요.'},{show:12,caption:'더하면 가운데 항들이 줄줄이 사라져요.'},{show:12,line:1,label:1,caption:'첫 항과 끝 항만 남아 부분합이 정해져요.'}]},
- telescoping:{title:'텔레스코핑',cat:'팁개념',ic:'&#8644;',def:'부분분수로 쪼갠 항들이 앞뒤로 서로 상쇄되며 사라지는 급수 계산법',
-  pts:seq(function(n){return 160-100*(1-Math.pow(0.5,n));}),lines:[60],lab:{x:288,y:52,a:'end',t:'Sₙ → 합'},
-  steps:[{show:4,caption:'부분합을 항별로 풀어 써요.'},{show:9,caption:'이웃한 항끼리 부호가 반대라 사라져요.'},{show:12,line:1,label:1,caption:'남은 처음·끝 항으로 극한값이 정해져요.'}]},
- base:{title:'밑',cat:'팁개념',ic:'a',def:'지수함수 <span class="v">y</span>=<span class="v">a</span><sup class="v">x</sup> 에서 밑이 되는 양수 <span class="v">a</span> (<span class="v">a</span>≠1)',
-  pts:seq(function(n){return 152-10.5*n;}),lines:[],lab:{x:284,y:30,a:'end',t:'a가 클수록 가파름'},
-  steps:[{show:3,caption:'y=aˣ 에서 밑 a는 그래프의 기울기를 정해요.'},{show:8,caption:'a>1이면 x가 커질수록 y가 급격히 커져요.'},{show:12,label:1,caption:'밑이 클수록 그래프가 더 가파르게 올라가요.'}]},
- expfunc:{title:'지수함수',cat:'팁개념',ic:'^',def:'<span class="v">y</span> = <span class="v">a</span><sup class="v">x</sup> (<span class="v">a</span>&gt;0, <span class="v">a</span>≠1) 꼴의 함수',
-  pts:seq(function(n){return 150-90*Math.pow(0.72,n-1);}),lines:[150],lab:{x:288,y:142,a:'end',t:'y = 0'},
-  steps:[{show:3,caption:'x자리에 1, 2, 3을 넣어 aˣ 값을 얻어요.'},{show:8,caption:'0<a<1이면 x가 커질수록 값이 점점 작아져요.'},{show:12,line:1,caption:'값은 0에 한없이 가까워지지만 닿지 않아요.'},{show:12,line:1,label:1,caption:'이런 함수를 지수함수라 해요.'}]},
- asymptote:{title:'점근선',cat:'팁개념',ic:'0',def:'그래프가 한없이 가까워지지만 닿지 않는 기준선',
-  pts:seq(function(n){return 150-90*Math.pow(0.72,n-1);}),lines:[150],lab:{x:288,y:142,a:'end',t:'y = 0'},
-  steps:[{show:3,caption:'그래프가 아래로 향하며 한 직선에 다가가요.'},{show:9,line:1,caption:'그 직선을 점선으로 표시해요.'},{show:12,line:1,label:1,caption:'곡선은 이 선에 한없이 가까워지지만 만나지 않아요.'}]}
-};
-var PAGES=[
-{no:'개념 01',unit:'I. 수열의 극한',sec:'01 수열의 극한',title:'수열의 수렴과 발산',
- p1:'수열 <span class="m">{</span><span class="v">a</span><sub class="v">n</sub><span class="m">}</span>에서 <span class="v">n</span>의 값이 한없이 커질 때, 일반항 <span class="v">a</span><sub class="v">n</sub>의 값이 일정한 값 <span class="v">L</span>에 한없이 가까워지면 이 수열은 <span class="v">L</span>에 <span class="term" data-t="converge">수렴</span>한다고 하며, 이때 <span class="v">L</span>을 <span class="term" data-t="limitvalue">극한값</span>이라 한다.',
- eqL:'n→∞',eqR:'<span class="v">a</span><sub class="v">n</sub> <span class="m">=</span> <span class="v">L</span>',
- p2:'수렴하지 않는 수열은 <span class="term" data-t="diverge">발산</span>한다고 하며, 그중 <span class="m">+&#8734;</span>, <span class="m">&minus;&#8734;</span> 어느 쪽으로도 가지 않는 경우를 <span class="term" data-t="oscillate">진동</span>한다고 한다.'},
-{no:'개념 02',unit:'I. 수열의 극한',sec:'01 수열의 극한',title:'등비수열의 극한',
- p1:'첫째항이 <span class="v">a</span>, <span class="term" data-t="ratio">공비</span>가 <span class="v">r</span>인 <span class="term" data-t="geoseq">등비수열</span> <span class="m">{</span><span class="v">ar</span><sup class="v">n</sup><sup class="m">&minus;1</sup><span class="m">}</span>의 수렴과 발산은 <span class="v">r</span>의 값에 따라 결정된다.',
- eqL:'n→∞',eqR:'<span class="v">r</span><sup class="v">n</sup> <span class="m">= 0</span> &nbsp;<span class="m">(</span>|<span class="v">r</span>| <span class="m">&lt; 1)</span>',
- p2:'<span class="v">r</span> <span class="m">&gt; 1</span>이면 양의 무한대로 <span class="term" data-t="diverge">발산</span>하고, <span class="v">r</span> <span class="m">= 1</span>이면 <span class="m">1</span>에 <span class="term" data-t="converge">수렴</span>하며, <span class="v">r</span> <span class="m">&#8804; &minus;1</span>이면 <span class="term" data-t="oscillate">진동</span>한다.'},
-{no:'개념 03',unit:'I. 수열의 극한',sec:'02 급수',title:'급수와 부분합',
- p1:'수열 <span class="m">{</span><span class="v">a</span><sub class="v">n</sub><span class="m">}</span>의 모든 항을 차례로 더한 식을 <span class="term" data-t="series">무한급수</span>라 하고, 첫째항부터 <span class="v">n</span>번째 항까지의 합을 <span class="term" data-t="partial">부분합</span> <span class="v">S</span><sub class="v">n</sub>이라 한다.',
- eqL:'',eqR:'<span class="v">S</span><sub class="v">n</sub> <span class="m">=</span> <span class="v">a</span><sub class="m">1</sub> <span class="m">+</span> <span class="v">a</span><sub class="m">2</sub> <span class="m">+ &#8943; +</span> <span class="v">a</span><sub class="v">n</sub>',
- p2:'부분합의 수열 <span class="m">{</span><span class="v">S</span><sub class="v">n</sub><span class="m">}</span>이 <span class="v">S</span>에 <span class="term" data-t="converge">수렴</span>하면 이 급수는 <span class="v">S</span>에 수렴한다 하고, <span class="v">S</span>를 <span class="term" data-t="sumval">급수의 합</span>이라 한다.'},
-{no:'개념 04',unit:'I. 수열의 극한',sec:'02 급수',title:'급수의 수렴과 발산',
- p1:'급수의 <span class="term" data-t="partial">부분합</span>으로 이루어진 수열 <span class="m">{</span><span class="v">S</span><sub class="v">n</sub><span class="m">}</span>이 일정한 값 <span class="v">S</span>에 <span class="term" data-t="converge">수렴</span>할 때, 이 급수는 <span class="v">S</span>에 수렴한다고 하고 <span class="v">S</span>를 <span class="term" data-t="sumval">급수의 합</span>이라 한다.',
- eqL:'n→∞',eqR:'<span class="v">S</span><sub class="v">n</sub> <span class="m">=</span> <span class="v">S</span>',
- p2:'부분합의 수열이 <span class="term" data-t="diverge">발산</span>하면 그 급수도 발산한다. 즉 급수의 수렴과 발산은 부분합 수열의 극한을 조사해 판정한다.'},
-{no:'개념 05',unit:'I. 수열의 극한',sec:'02 급수',title:'급수의 수렴 판정',
- p1:'급수가 <span class="term" data-t="converge">수렴</span>하면 그 <span class="term" data-t="nthzero">일반항</span>은 반드시 <span class="m">0</span>에 가까워진다.',
- eqL:'n→∞',eqR:'<span class="v">a</span><sub class="v">n</sub> <span class="m">= 0</span>',
- p2:'그러나 역은 성립하지 않는다. 대우를 이용하면 일반항의 극한이 <span class="m">0</span>이 아닐 때 그 급수는 <span class="term" data-t="diverge">발산</span>한다 — 발산 판정에 쓰인다.'},
-{no:'개념 06',unit:'I. 수열의 극한',sec:'02 급수',title:'등비급수의 수렴과 발산',
- p1:'<span class="term" data-t="firstterm">첫째항</span>이 <span class="v">a</span>, <span class="term" data-t="ratio">공비</span>가 <span class="v">r</span>인 <span class="term" data-t="geoseq">등비수열</span>에서 얻은 급수를 <span class="term" data-t="geoseries">등비급수</span>라 한다.',
- eqL:'',eqR:'<span class="v">a</span> <span class="m">+</span> <span class="v">ar</span> <span class="m">+</span> <span class="v">ar</span><sup class="m">2</sup> <span class="m">+ &#8943; =</span> <span class="v">a</span> <span class="m">/ (1 &minus;</span> <span class="v">r</span><span class="m">)</span>',
- p2:'<span class="v">a</span> <span class="m">&#8800; 0</span>일 때 <span class="m">|</span><span class="v">r</span><span class="m">| &lt; 1</span>이면 수렴하고 그 합은 <span class="v">a</span><span class="m">/(1&minus;</span><span class="v">r</span><span class="m">)</span>, <span class="m">|</span><span class="v">r</span><span class="m">| &#8805; 1</span>이면 <span class="term" data-t="diverge">발산</span>한다.'},
-{no:'개념 07',unit:'I. 수열의 극한',sec:'02 급수',title:'급수의 성질',
- p1:'두 급수가 각각 <span class="v">S</span>, <span class="v">T</span>에 <span class="term" data-t="converge">수렴</span>할 때, 두 급수의 합과 차, 그리고 상수배로 만든 급수도 수렴한다.',
- eqL:'',eqR:'<span class="m">&#8721; (</span><span class="v">a</span><sub class="v">n</sub> <span class="m">&#177;</span> <span class="v">b</span><sub class="v">n</sub><span class="m">) =</span> <span class="v">S</span> <span class="m">&#177;</span> <span class="v">T</span>',
- p2:'또 상수 <span class="v">c</span>에 대하여 <span class="m">&#8721;</span> <span class="v">c a</span><sub class="v">n</sub> <span class="m">=</span> <span class="v">cS</span> 이다. 단, 이 성질은 각 급수가 <span class="term" data-t="converge">수렴</span>할 때에만 쓸 수 있다.'}
-,
-{no:'개념 08',unit:'I. 수열의 극한',sec:'01 수열의 극한',title:'극한에 대한 기본 성질',
- p1:'<span class="term" data-t="converge">수렴</span>하는 두 수열의 극한값이 각각 <span class="v">&#945;</span>, <span class="v">&#946;</span>일 때, 합·차·곱·몫의 극한은 <span class="term" data-t="linearity">각각의 극한값</span>으로 계산할 수 있다.',
- eqL:'n→∞',eqR:'<span class="m">(</span><span class="v">a</span><sub class="v">n</sub> <span class="m">&#177;</span> <span class="v">b</span><sub class="v">n</sub><span class="m">) =</span> <span class="v">&#945;</span> <span class="m">&#177;</span> <span class="v">&#946;</span>',
- p2:'곱은 <span class="v">&#945;&#946;</span>, 몫은 <span class="v">&#945;</span><span class="m">/</span><span class="v">&#946;</span> 이다. 단 몫은 <span class="v">&#946;</span> <span class="m">&#8800; 0</span>일 때만 쓸 수 있고, 두 수열이 모두 수렴할 때에만 성립한다.'},
-{no:'개념 09',unit:'I. 수열의 극한',sec:'01 수열의 극한',title:'부정형의 극한 계산',
- p1:'분자와 분모가 모두 한없이 커지는 <span class="m">&#8734;/&#8734;</span> 꼴이나 <span class="m">&#8734; &minus; &#8734;</span> 꼴은 그대로는 값을 알 수 없어 <span class="term" data-t="indeterminate">부정형</span>이라 한다.',
- eqL:'n→∞',eqR:'<span class="m">(3</span><span class="v">n</span><sup class="m">2</sup><span class="m">+</span><span class="v">n</span><span class="m">) / (</span><span class="v">n</span><sup class="m">2</sup><span class="m">&minus;1) = 3</span>',
- p2:'다항식이면 <span class="term" data-t="degree">최고차항</span>으로 분자·분모를 나눈다. 차수가 같으면 최고차항 계수의 비에 <span class="term" data-t="converge">수렴</span>하고, 분자 차수가 크면 <span class="term" data-t="diverge">발산</span>, 작으면 <span class="m">0</span>에 수렴한다.'},
-{no:'개념 10',unit:'I. 수열의 극한',sec:'01 수열의 극한',title:'수열의 대소와 샌드위치 정리',
- p1:'모든 항에서 <span class="v">a</span><sub class="v">n</sub> <span class="m">&#8804;</span> <span class="v">c</span><sub class="v">n</sub> <span class="m">&#8804;</span> <span class="v">b</span><sub class="v">n</sub> 이고 양쪽 두 수열이 같은 값 <span class="v">&#945;</span>에 <span class="term" data-t="converge">수렴</span>하면, 가운데 수열도 <span class="v">&#945;</span>에 수렴한다.',
- eqL:'n→∞',eqR:'<span class="v">c</span><sub class="v">n</sub> <span class="m">=</span> <span class="v">&#945;</span>',
- p2:'이것을 <span class="term" data-t="squeeze">샌드위치 정리</span>라 한다. 일반항을 직접 구하기 어렵고 범위만 주어진 수열의 <span class="term" data-t="limitvalue">극한값</span>을 구할 때 쓴다.'},
-{no:'개념 11',unit:'I. 수열의 극한',sec:'02 급수',title:'부분분수를 이용한 급수의 합',
- p1:'일반항이 분수 꼴인 급수는 <span class="term" data-t="partfrac">부분분수</span>로 쪼개면 이웃한 항끼리 서로 사라지는데, 이를 <span class="term" data-t="telescoping">텔레스코핑</span>이라 한다.',
- eqL:'n→∞',eqR:'<span class="v">S</span><sub class="v">n</sub> <span class="m">=</span> <span class="m">1</span>',
- p2:'부분분수로 쪼갠 뒤 부분합 <span class="v">S</span><sub class="v">n</sub>을 구하면 앞뒤 항이 사라지고 처음과 끝 항만 남아, <span class="v">n</span>→∞ 극한을 취해 급수의 합을 구할 수 있다.'},
-{no:'개념 12',unit:'II. 지수함수와 로그함수의 미분',sec:'01 지수함수의 극한과 미분',title:'지수함수의 극한',
- p1:'<span class="term" data-t="base">밑</span> <span class="v">a</span>가 1보다 큰 <span class="term" data-t="expfunc">지수함수</span> <span class="v">y</span> = <span class="v">a</span><sup class="v">x</sup> 에서, <span class="v">a</span> &gt; 1이면 <span class="v">x</span>가 한없이 커질수록 <span class="v">y</span>도 한없이 커진다.',
- eqL:'x→−∞',eqR:'<span class="v">a</span><sup class="v">x</sup> <span class="m">=</span> <span class="m">0</span>',
- p2:'이때 그래프는 <span class="v">x</span>가 한없이 작아질수록 0에 가까워지며, <span class="v">y</span> = 0을 <span class="term" data-t="asymptote">점근선</span>으로 갖는다. 반대로 0 &lt; <span class="v">a</span> &lt; 1이면 <span class="v">x</span>가 커질수록 0으로 <span class="term" data-t="converge">수렴</span>하고, <span class="v">x</span>가 작아질수록 값이 한없이 커진다.'}
-];
+/*DATA:BEGIN*/
+var DATA={"tips":{"asymptote":{"title":"점근선","cat":"팁개념","ic":"0","def":"그래프가 한없이 가까워지지만 닿지 않는 기준선","curve":"150 - 90*0.72**(n-1)","lines":[150],"lab":{"x":288,"y":142,"a":"end","t":"y = 0"},"steps":[{"show":3,"line":0,"label":0,"caption":"그래프가 아래로 향하며 한 직선에 다가가요."},{"show":9,"line":1,"label":0,"caption":"그 직선을 점선으로 표시해요."},{"show":12,"line":1,"label":1,"caption":"곡선은 이 선에 한없이 가까워지지만 만나지 않아요."}],"rel":["expfunc"]},"base":{"title":"밑","cat":"팁개념","ic":"a","def":"지수함수 <span class=\"v\">y<\/span>=<span class=\"v\">a<\/span>^<span class=\"v\">x<\/span> 에서 밑이 되는 양수 <span class=\"v\">a<\/span> (<span class=\"v\">a<\/span>≠1)","curve":"152 - 10.5*n","lines":[],"lab":{"x":288,"y":30,"a":"end","t":""},"steps":[{"show":3,"line":0,"label":0,"caption":"y=a^x 에서 밑 a는 그래프의 기울기를 정해요."},{"show":8,"line":0,"label":0,"caption":"a>1이면 x가 커질수록 y가 급격히 커져요."},{"show":12,"line":0,"label":1,"caption":"밑이 클수록 그래프가 더 가파르게 올라가요."}],"rel":["expfunc"]},"converge":{"title":"수렴","cat":"팁개념","ic":"→","def":"<span class=\"v\">n<\/span>이 한없이 커질 때 <span class=\"v\">a<\/span><sub><span class=\"v\">n<\/span><\/sub>이 한 값에 한없이 가까워짐","curve":"60 + 80/n","lines":[60],"lab":{"x":288,"y":52,"a":"end","t":"y = L"},"steps":[{"show":3,"line":0,"label":0,"caption":"a₁, a₂, a₃ 을 순서대로 찍어요."},{"show":12,"line":0,"label":0,"caption":"n이 커질수록 점들이 한 값으로 몰려가요."},{"show":12,"line":1,"label":0,"caption":"다가가는 값을 점선 y = L 로 표시해요."},{"show":12,"line":1,"label":1,"caption":"a_n은 L에 한없이 가까워져요."}],"rel":["limitvalue","diverge"]},"degree":{"title":"최고차항","cat":"팁개념","ic":"n","def":"다항식에서 차수가 가장 높은 항. 부정형 계산의 기준","curve":"150-100*(1-1/(1+0.35*n))","lines":[50],"lab":{"x":288,"y":42,"a":"end","t":"계수의 비"},"steps":[{"show":5,"line":0,"label":0,"caption":"분자·분모를 최고차항으로 나눠요."},{"show":12,"line":1,"label":1,"caption":"차수가 같으면 계수의 비로 수렴해요."}],"rel":["indeterminate","converge"]},"diverge":{"title":"발산","cat":"팁개념","ic":"∞","def":"어떤 값에도 가까워지지 않음 (&#8734;, &<span class=\"v\">m<\/span>inus;&#8734; 포함)","curve":"152 - 10.5*n","lines":[],"lab":{"x":288,"y":30,"a":"end","t":"&#8734; 로"},"steps":[{"show":3,"line":0,"label":0,"caption":"처음 몇 항은 평범해 보여요."},{"show":8,"line":0,"label":0,"caption":"n이 커질수록 값이 계속 커져요."},{"show":12,"line":0,"label":1,"caption":"멈추지 않고 커져요 — 양의 무한대로 발산."}],"rel":["oscillate","converge"]},"expfunc":{"title":"지수함수","cat":"팁개념","ic":"^","def":"<span class=\"v\">y<\/span> = <span class=\"v\">a<\/span>^<span class=\"v\">x<\/span> (<span class=\"v\">a<\/span>>0, <span class=\"v\">a<\/span>≠1) 꼴의 함수","curve":"150 - 90*0.72**(n-1)","lines":[150],"lab":{"x":288,"y":142,"a":"end","t":"y = 0"},"steps":[{"show":3,"line":0,"label":0,"caption":"x자리에 1, 2, 3을 넣어 a^x 값을 얻어요."},{"show":8,"line":0,"label":0,"caption":"0<a<1이면 x가 커질수록 값이 점점 작아져요."},{"show":12,"line":1,"label":0,"caption":"값은 0에 한없이 가까워지지만 닿지 않아요."},{"show":12,"line":1,"label":1,"caption":"이런 함수를 지수함수라 해요."}],"rel":["base","asymptote"]},"firstterm":{"title":"첫째항","cat":"팁개념","ic":"a","def":"수열의 맨 처음 항 <span class=\"v\">a<\/span><sub><span class=\"m\">1<\/span><\/sub>","curve":"150-90*Math.pow(0.72,n-1)","lines":[],"lab":{"x":30,"y":30,"a":"start","t":"여기가 첫째항"},"steps":[{"show":1,"line":0,"label":1,"caption":"가장 왼쪽 첫 점이 첫째항이에요."},{"show":12,"line":0,"label":0,"caption":"이후 항은 공비 r 을 곱해 이어져요."}],"rel":["geoseq","ratio"]},"geoseq":{"title":"등비수열","cat":"팁개념","ic":"r","def":"이웃한 두 항의 비가 일정한 수열","curve":"150-90*Math.pow(0.72,n-1)","lines":[150],"lab":{"x":288,"y":142,"a":"end","t":"공비 r 배씩"},"steps":[{"show":4,"line":0,"label":0,"caption":"각 항이 앞 항의 r배씩 변해요."},{"show":12,"line":1,"label":1,"caption":""}],"rel":["ratio","firstterm"]},"geoseries":{"title":"등비급수","cat":"팁개념","ic":"&#8721;","def":"등비수열의 모든 항을 더한 급수. 합은 <span class=\"v\">a<\/span>/(1-<span class=\"v\">r<\/span>)","curve":"155-95*(1-Math.pow(0.62,n))","lines":[60],"lab":{"x":288,"y":52,"a":"end","t":"a /(1-r)"},"steps":[{"show":3,"line":0,"label":0,"caption":"첫째항부터 차례로 더해요."},{"show":12,"line":0,"label":0,"caption":""},{"show":12,"line":1,"label":1,"caption":"합이 a /(1-r) 에 수렴해요."}],"rel":["geoseq","sumval"]},"indeterminate":{"title":"부정형","cat":"팁개념","ic":"?","def":"&#8734;/&#8734;, &#8734;&<span class=\"v\">m<\/span>inus;&#8734; 처럼 그대로는 값을 알 수 없는 꼴","curve":"100+40*Math.sin(n*1.1)/n","lines":[100],"lab":{"x":288,"y":92,"a":"end","t":"변형해야 보임"},"steps":[{"show":5,"line":0,"label":0,"caption":"분자와 분모가 둘 다 커져요."},{"show":12,"line":0,"label":0,"caption":"그대로는 값을 판단할 수 없어요."},{"show":12,"line":1,"label":1,"caption":"최고차항으로 나누면 극한이 드러나요."}],"rel":["degree","diverge"]},"limitvalue":{"title":"극한값","cat":"팁개념","ic":"L","def":"수렴하는 수열이 한없이 가까워지는 그 값 <span class=\"v\">L<\/span>","curve":"60 + 80/n","lines":[60],"lab":{"x":288,"y":52,"a":"end","t":"y = L"},"steps":[{"show":12,"line":0,"label":0,"caption":"수렴하는 수열의 점을 모두 찍어요."},{"show":12,"line":1,"label":1,"caption":"점들이 다가가는 그 값이 극한값이에요."}],"rel":["converge","squeeze"]},"linearity":{"title":"극한의 기본 성질","cat":"팁개념","ic":"&#177;","def":"수렴하는 두 수열은 합·차·곱·몫의 극한을 따로 계산해도 된다","curve":"70+70/n","lines":[70],"lab":{"x":288,"y":62,"a":"end","t":"각각의 극한으로"},"steps":[{"show":6,"line":0,"label":0,"caption":"두 수열이 각각 수렴한다고 하면"},{"show":12,"line":1,"label":1,"caption":"합·차·곱·몫도 각 극한값으로 계산돼요."}],"rel":["converge","limitvalue"]},"nthzero":{"title":"일반항의 극한","cat":"팁개념","ic":"0","def":"급수가 수렴하면 반드시 <span class=\"v\">a<\/span><sub><span class=\"v\">n<\/span><\/sub> &#8594; 0","curve":"150-90/n","lines":[150],"lab":{"x":288,"y":142,"a":"end","t":"aₙ &#8594; 0"},"steps":[{"show":4,"line":0,"label":0,"caption":"항 aₙ 을 순서대로 찍어요."},{"show":12,"line":0,"label":0,"caption":"뒤로 갈수록 항이 점점 작아져요."},{"show":12,"line":1,"label":1,"caption":"수렴하는 급수는 항이 0으로 가요."}],"rel":["series","diverge"]},"oscillate":{"title":"진동","cat":"팁개념","ic":"~","def":"수렴도 아니고 &#8734;, &<span class=\"v\">m<\/span>inus;&#8734; 로도 가지 않는 발산","curve":"n%2==1 ? 136 : 64","lines":[64,136],"lab":{"x":160,"y":56,"a":"middle","t":"한 값에 머물지 않음"},"steps":[{"show":4,"line":0,"label":0,"caption":"항이 1과 −1을 번갈아 오가요."},{"show":12,"line":1,"label":0,"caption":"n이 커져도 한 값에 가까워지지 않아요."},{"show":12,"line":1,"label":1,"caption":"수렴도 무한대도 아닌 발산 — 진동."}],"rel":["diverge","converge"]},"partfrac":{"title":"부분분수","cat":"팁개념","ic":"/","def":"1/(<span class=\"v\">n<\/span>(<span class=\"v\">n<\/span>+1)) 을 1/<span class=\"v\">n<\/span> − 1/(<span class=\"v\">n<\/span>+1) 처럼 두 분수의 차로 쪼개는 것","curve":"160 - 100*(1 - 0.5**n)","lines":[60],"lab":{"x":288,"y":52,"a":"end","t":"S_n"},"steps":[{"show":3,"line":0,"label":0,"caption":"1/(1·2), 1/(2·3), 1/(3·4) … 를 부분분수로 쪼개요."},{"show":8,"line":0,"label":0,"caption":"각 항이 1/n − 1/(n+1) 로 바뀌어요."},{"show":12,"line":0,"label":0,"caption":"더하면 가운데 항들이 줄줄이 사라져요."},{"show":12,"line":1,"label":1,"caption":"첫 항과 끝 항만 남아 부분합이 정해져요."}],"rel":["telescoping"]},"partial":{"title":"부분합","cat":"팁개념","ic":"S","def":"첫째항부터 <span class=\"v\">n<\/span>번째 항까지의 합","curve":"160-100*(1-Math.pow(0.5,n))","lines":[60],"lab":{"x":288,"y":52,"a":"end","t":"S"},"steps":[{"show":5,"line":0,"label":0,"caption":"S₁, S₂, S₃ … 을 차례로 그려요."},{"show":12,"line":1,"label":1,"caption":"Sₙ의 극한이 곧 급수의 합이에요."}],"rel":["series","sumval"]},"ratio":{"title":"공비","cat":"팁개념","ic":"r","def":"등비수열에서 이웃한 두 항의 비","curve":"150-90*Math.pow(0.72,n-1)","lines":[150],"lab":{"x":160,"y":142,"a":"middle","t":"|r| < 1 &#8594; 0에 수렴"},"steps":[{"show":6,"line":0,"label":0,"caption":"r을 곱할 때마다 값이 줄어들어요."},{"show":12,"line":1,"label":1,"caption":""}],"rel":["geoseq","geoseries"]},"series":{"title":"무한급수","cat":"팁개념","ic":"&#8721;","def":"수열의 모든 항을 끝없이 더한 것","curve":"160-100*(1-Math.pow(0.5,n))","lines":[60],"lab":{"x":288,"y":52,"a":"end","t":"합 S"},"steps":[{"show":3,"line":0,"label":0,"caption":"항을 하나씩 더해 부분합을 만들어요."},{"show":12,"line":0,"label":0,"caption":"더할수록 부분합이 천천히 늘어요."},{"show":12,"line":1,"label":1,"caption":"부분합이 S에 수렴하면 급수가 수렴."}],"rel":["partial","sumval"]},"squeeze":{"title":"샌드위치 정리","cat":"팁개념","ic":"≤","def":"양쪽에서 조여오는 두 수열이 같은 값에 수렴하면 가운데도 그 값에 수렴","curve":"90 + 40/n","lines":[90],"lab":{"x":160,"y":82,"a":"middle","t":"위아래가 같은 값으로"},"steps":[{"show":4,"line":0,"label":0,"caption":"가운데 수열을 위아래로 감싸요."},{"show":12,"line":0,"label":0,"caption":"감싸는 두 수열이 같은 값으로 가면"},{"show":12,"line":1,"label":1,"caption":"가운데 수열도 그 값에 수렴해요."}],"rel":["converge","limitvalue"]},"sumval":{"title":"급수의 합","cat":"팁개념","ic":"S","def":"부분합의 수열 <span class=\"v\">S<\/span><sub><span class=\"v\">n<\/span><\/sub>이 수렴할 때 그 극한값","curve":"160-100*(1-Math.pow(0.5,n))","lines":[60],"lab":{"x":288,"y":52,"a":"end","t":"S"},"steps":[{"show":4,"line":0,"label":0,"caption":"부분합 S₁, S₂, S₃ … 을 찍어요."},{"show":12,"line":1,"label":1,"caption":"그 극한값 S가 급수의 합이에요."}],"rel":["partial","nthzero"]},"telescoping":{"title":"텔레스코핑","cat":"팁개념","ic":"⇄","def":"부분분수로 쪼갠 항들이 앞뒤로 서로 상쇄되며 사라지는 급수 계산법","curve":"160 - 100*(1 - 0.5**n)","lines":[60],"lab":{"x":288,"y":52,"a":"end","t":"S_n → 합"},"steps":[{"show":4,"line":0,"label":0,"caption":"부분합을 항별로 풀어 써요."},{"show":9,"line":0,"label":0,"caption":"이웃한 항끼리 부호가 반대라 사라져요."},{"show":12,"line":1,"label":1,"caption":"남은 처음·끝 항으로 극한값이 정해져요."}],"rel":["partfrac"]}},"pages":[{"order":1,"no":"개념 01","unit":"I. 수열의 극한","sec":"01 수열의 극한","title":"수열의 수렴과 발산","p1":"수열 {<span class=\"v\">a<\/span><sub><span class=\"v\">n<\/span><\/sub>}에서 <span class=\"v\">n<\/span>의 값이 한없이 커질 때, 일반항 <span class=\"v\">a<\/span><sub><span class=\"v\">n<\/span><\/sub>의 값이 일정한 값 <span class=\"v\">L<\/span>에 한없이 가까워지면 이 수열은 <span class=\"v\">L<\/span>에 <span class=\"term\" data-t=\"converge\">수렴<\/span>한다고 하며, 이때 <span class=\"v\">L<\/span>을 <span class=\"term\" data-t=\"limitvalue\">극한값<\/span>이라 한다.","p2":"수렴하지 않는 수열은 <span class=\"term\" data-t=\"diverge\">발산<\/span>한다고 하며, 그중 +&#8734;, &<span class=\"v\">m<\/span>inus;&#8734; 어느 쪽으로도 가지 않는 경우를 <span class=\"term\" data-t=\"oscillate\">진동<\/span>한다고 한다.","eqL":"n&#8594;&#8734;","eqR":"<span class=\"v\">a<\/span><sub><span class=\"v\">n<\/span><\/sub> <span class=\"m\">=<\/span> <span class=\"v\">L<\/span>"},{"order":2,"no":"개념 02","unit":"I. 수열의 극한","sec":"01 수열의 극한","title":"등비수열의 극한","p1":"첫째항이 <span class=\"v\">a<\/span>, <span class=\"term\" data-t=\"ratio\">공비<\/span>가 <span class=\"v\">r<\/span>인 <span class=\"term\" data-t=\"geoseq\">등비수열<\/span> {<span class=\"v\">a<\/span>r^<span class=\"v\">n<\/span>^{-1}}의 수렴과 발산은 <span class=\"v\">r<\/span>의 값에 따라 결정된다.","p2":"<span class=\"v\">r<\/span> > 1이면 양의 무한대로 <span class=\"term\" data-t=\"diverge\">발산<\/span>하고, <span class=\"v\">r<\/span> = 1이면 1에 <span class=\"term\" data-t=\"converge\">수렴<\/span>하며, <span class=\"v\">r<\/span> &#8804; -1이면 <span class=\"term\" data-t=\"oscillate\">진동<\/span>한다.","eqL":"n&#8594;&#8734;","eqR":"<span class=\"v\">r<\/span><sup><span class=\"v\">n<\/span><\/sup> <span class=\"m\">=<\/span> <span class=\"m\">0<\/span> <span class=\"m\">(<\/span><span class=\"m\">|<\/span><span class=\"v\">r<\/span><span class=\"m\">|<\/span> <span class=\"m\"><<\/span> <span class=\"m\">1<\/span><span class=\"m\">)<\/span>"},{"order":3,"no":"개념 03","unit":"I. 수열의 극한","sec":"02 급수","title":"급수와 부분합","p1":"수열 {<span class=\"v\">a<\/span><sub><span class=\"v\">n<\/span><\/sub>}의 모든 항을 차례로 더한 식을 <span class=\"term\" data-t=\"series\">무한급수<\/span>라 하고, 첫째항부터 <span class=\"v\">n<\/span>번째 항까지의 합을 <span class=\"term\" data-t=\"partial\">부분합<\/span> <span class=\"v\">S<\/span><sub><span class=\"v\">n<\/span><\/sub>이라 한다.","p2":"부분합의 수열 {<span class=\"v\">S<\/span><sub><span class=\"v\">n<\/span><\/sub>}이 <span class=\"v\">S<\/span>에 <span class=\"term\" data-t=\"converge\">수렴<\/span>하면 이 급수는 <span class=\"v\">S<\/span>에 수렴한다 하고, <span class=\"v\">S<\/span>를 [[&#8721;<span class=\"v\">v<\/span>al|급수의 합]]이라 한다.","eqL":"","eqR":"<span class=\"v\">S<\/span><sub><span class=\"v\">n<\/span><\/sub> <span class=\"m\">=<\/span> <span class=\"v\">a<\/span><sub><span class=\"m\">1<\/span><\/sub> <span class=\"m\">+<\/span> <span class=\"v\">a<\/span><sub><span class=\"m\">2<\/span><\/sub> <span class=\"m\">+<\/span> <span class=\"m\">&<\/span><span class=\"m\">#<\/span><span class=\"m\">8<\/span><span class=\"m\">9<\/span><span class=\"m\">4<\/span><span class=\"m\">3<\/span><span class=\"m\">;<\/span> <span class=\"m\">+<\/span> <span class=\"v\">a<\/span><sub><span class=\"v\">n<\/span><\/sub>"},{"order":4,"no":"개념 04","unit":"I. 수열의 극한","sec":"02 급수","title":"급수의 수렴과 발산","p1":"급수의 <span class=\"term\" data-t=\"partial\">부분합<\/span>으로 이루어진 수열 {<span class=\"v\">S<\/span><sub><span class=\"v\">n<\/span><\/sub>}이 일정한 값 <span class=\"v\">S<\/span>에 <span class=\"term\" data-t=\"converge\">수렴<\/span>할 때, 이 급수는 <span class=\"v\">S<\/span>에 수렴한다고 하고 <span class=\"v\">S<\/span>를 [[&#8721;<span class=\"v\">v<\/span>al|급수의 합]]이라 한다.","p2":"부분합의 수열이 <span class=\"term\" data-t=\"diverge\">발산<\/span>하면 그 급수도 발산한다. 즉 급수의 수렴과 발산은 부분합 수열의 극한을 조사해 판정한다.","eqL":"n&#8594;&#8734;","eqR":"<span class=\"v\">S<\/span><sub><span class=\"v\">n<\/span><\/sub> <span class=\"m\">=<\/span> <span class=\"v\">S<\/span>"},{"order":5,"no":"개념 05","unit":"I. 수열의 극한","sec":"02 급수","title":"급수의 수렴 판정","p1":"급수가 <span class=\"term\" data-t=\"converge\">수렴<\/span>하면 그 <span class=\"term\" data-t=\"nthzero\">일반항<\/span>은 반드시 0에 가까워진다.","p2":"그러나 역은 성립하지 않는다. 대우를 이용하면 일반항의 극한이 0이 아닐 때 그 급수는 <span class=\"term\" data-t=\"diverge\">발산<\/span>한다 — 발산 판정에 쓰인다.","eqL":"n&#8594;&#8734;","eqR":"<span class=\"v\">a<\/span><sub><span class=\"v\">n<\/span><\/sub> <span class=\"m\">=<\/span> <span class=\"m\">0<\/span>"},{"order":6,"no":"개념 06","unit":"I. 수열의 극한","sec":"02 급수","title":"등비급수의 수렴과 발산","p1":"<span class=\"term\" data-t=\"firstterm\">첫째항<\/span>이 <span class=\"v\">a<\/span>, <span class=\"term\" data-t=\"ratio\">공비<\/span>가 <span class=\"v\">r<\/span>인 <span class=\"term\" data-t=\"geoseq\">등비수열<\/span>에서 얻은 급수를 <span class=\"term\" data-t=\"geoseries\">등비급수<\/span>라 한다.","p2":"<span class=\"v\">a<\/span> &#8800; 0일 때 |<span class=\"v\">r<\/span>| = 1이면 <span class=\"term\" data-t=\"diverge\">발산<\/span>한다.","eqL":"","eqR":"<span class=\"v\">a<\/span> <span class=\"m\">+<\/span> <span class=\"v\">a<\/span><span class=\"v\">r<\/span> <span class=\"m\">+<\/span> <span class=\"v\">a<\/span><span class=\"v\">r<\/span><sup><span class=\"m\">2<\/span><\/sup> <span class=\"m\">+<\/span> <span class=\"m\">&<\/span><span class=\"m\">#<\/span><span class=\"m\">8<\/span><span class=\"m\">9<\/span><span class=\"m\">4<\/span><span class=\"m\">3<\/span><span class=\"m\">;<\/span> <span class=\"m\">=<\/span> <span class=\"v\">a<\/span> <span class=\"m\">/<\/span> <span class=\"m\">(<\/span><span class=\"m\">1<\/span> - <span class=\"v\">r<\/span><span class=\"m\">)<\/span>"},{"order":7,"no":"개념 07","unit":"I. 수열의 극한","sec":"02 급수","title":"급수의 성질","p1":"두 급수가 각각 <span class=\"v\">S<\/span>, <span class=\"v\">T<\/span>에 <span class=\"term\" data-t=\"converge\">수렴<\/span>할 때, 두 급수의 합과 차, 그리고 상수배로 만든 급수도 수렴한다.","p2":"또 상수 <span class=\"v\">c<\/span>에 대하여 &#8721; <span class=\"v\">c<\/span> <span class=\"v\">a<\/span><sub><span class=\"v\">n<\/span><\/sub> = <span class=\"v\">c<\/span>S 이다. 단, 이 성질은 각 급수가 <span class=\"term\" data-t=\"converge\">수렴<\/span>할 때에만 쓸 수 있다.","eqL":"","eqR":"<span class=\"m\">&<\/span><span class=\"m\">#<\/span><span class=\"m\">8<\/span><span class=\"m\">7<\/span><span class=\"m\">2<\/span><span class=\"m\">1<\/span><span class=\"m\">;<\/span> <span class=\"m\">(<\/span><span class=\"v\">a<\/span><sub><span class=\"v\">n<\/span><\/sub> <span class=\"m\">&<\/span><span class=\"m\">#<\/span><span class=\"m\">1<\/span><span class=\"m\">7<\/span><span class=\"m\">7<\/span><span class=\"m\">;<\/span> <span class=\"v\">b<\/span><sub><span class=\"v\">n<\/span><\/sub><span class=\"m\">)<\/span> <span class=\"m\">=<\/span> <span class=\"v\">S<\/span> <span class=\"m\">&<\/span><span class=\"m\">#<\/span><span class=\"m\">1<\/span><span class=\"m\">7<\/span><span class=\"m\">7<\/span><span class=\"m\">;<\/span> <span class=\"v\">T<\/span>"},{"order":8,"no":"개념 08","unit":"I. 수열의 극한","sec":"01 수열의 극한","title":"극한에 대한 기본 성질","p1":"<span class=\"term\" data-t=\"converge\">수렴<\/span>하는 두 수열의 극한값이 각각 &#945;, &#946;일 때, 합·차·곱·몫의 극한은 <span class=\"term\" data-t=\"linearity\">각각의 극한값<\/span>으로 계산할 수 있다.","p2":"곱은 &#945;&#946;, 몫은 &#945;/&#946; 이다. 단 몫은 &#946; &#8800; 0일 때만 쓸 수 있고, 두 수열이 모두 수렴할 때에만 성립한다.","eqL":"n&#8594;&#8734;","eqR":"<span class=\"m\">(<\/span><span class=\"v\">a<\/span><sub><span class=\"v\">n<\/span><\/sub> <span class=\"m\">&<\/span><span class=\"m\">#<\/span><span class=\"m\">1<\/span><span class=\"m\">7<\/span><span class=\"m\">7<\/span><span class=\"m\">;<\/span> <span class=\"v\">b<\/span><sub><span class=\"v\">n<\/span><\/sub><span class=\"m\">)<\/span> <span class=\"m\">=<\/span> <span class=\"m\">&<\/span><span class=\"m\">#<\/span><span class=\"m\">9<\/span><span class=\"m\">4<\/span><span class=\"m\">5<\/span><span class=\"m\">;<\/span> <span class=\"m\">&<\/span><span class=\"m\">#<\/span><span class=\"m\">1<\/span><span class=\"m\">7<\/span><span class=\"m\">7<\/span><span class=\"m\">;<\/span> <span class=\"m\">&<\/span><span class=\"m\">#<\/span><span class=\"m\">9<\/span><span class=\"m\">4<\/span><span class=\"m\">6<\/span><span class=\"m\">;<\/span>"},{"order":9,"no":"개념 09","unit":"I. 수열의 극한","sec":"01 수열의 극한","title":"부정형의 극한 계산","p1":"분자와 분모가 모두 한없이 커지는 &#8734;/&#8734; 꼴이나 &#8734; - &#8734; 꼴은 그대로는 값을 알 수 없어 <span class=\"term\" data-t=\"indeterminate\">부정형<\/span>이라 한다.","p2":"다항식이면 <span class=\"term\" data-t=\"degree\">최고차항<\/span>으로 분자·분모를 나눈다. 차수가 같으면 최고차항 계수의 비에 <span class=\"term\" data-t=\"converge\">수렴<\/span>하고, 분자 차수가 크면 <span class=\"term\" data-t=\"diverge\">발산<\/span>, 작으면 0에 수렴한다.","eqL":"n&#8594;&#8734;","eqR":"<span class=\"m\">(<\/span><span class=\"m\">3<\/span><span class=\"v\">n<\/span><sup><span class=\"m\">2<\/span><\/sup><span class=\"m\">+<\/span><span class=\"v\">n<\/span><span class=\"m\">)<\/span> <span class=\"m\">/<\/span> <span class=\"m\">(<\/span><span class=\"v\">n<\/span><sup><span class=\"m\">2<\/span><\/sup>-<span class=\"m\">1<\/span><span class=\"m\">)<\/span> <span class=\"m\">=<\/span> <span class=\"m\">3<\/span>"},{"order":10,"no":"개념 10","unit":"I. 수열의 극한","sec":"01 수열의 극한","title":"수열의 대소와 샌드위치 정리","p1":"모든 항에서 <span class=\"v\">a<\/span><sub><span class=\"v\">n<\/span><\/sub> &#8804; <span class=\"v\">c<\/span><sub><span class=\"v\">n<\/span><\/sub> &#8804; <span class=\"v\">b<\/span><sub><span class=\"v\">n<\/span><\/sub> 이고 양쪽 두 수열이 같은 값 &#945;에 <span class=\"term\" data-t=\"converge\">수렴<\/span>하면, 가운데 수열도 &#945;에 수렴한다.","p2":"이것을 <span class=\"term\" data-t=\"squeeze\">샌드위치 정리<\/span>라 한다. 일반항을 직접 구하기 어렵고 범위만 주어진 수열의 <span class=\"term\" data-t=\"limitvalue\">극한값<\/span>을 구할 때 쓴다.","eqL":"n&#8594;&#8734;","eqR":"<span class=\"v\">c<\/span><sub><span class=\"v\">n<\/span><\/sub> <span class=\"m\">=<\/span> <span class=\"m\">&<\/span><span class=\"m\">#<\/span><span class=\"m\">9<\/span><span class=\"m\">4<\/span><span class=\"m\">5<\/span><span class=\"m\">;<\/span>"},{"order":11,"no":"개념 11","unit":"I. 수열의 극한","sec":"02 급수","title":"부분분수를 이용한 급수의 합","p1":"일반항이 분수 꼴인 급수는 <span class=\"term\" data-t=\"partfrac\">부분분수<\/span>로 쪼개면 이웃한 항끼리 서로 사라지는데, 이를 <span class=\"term\" data-t=\"telescoping\">텔레스코핑<\/span>이라 한다.","p2":"부분분수로 쪼갠 뒤 부분합 <span class=\"v\">S<\/span><sub><span class=\"v\">n<\/span><\/sub>을 구하면 앞뒤 항이 사라지고 처음과 끝 항만 남아, <span class=\"v\">n<\/span>&#8594;&#8734; 극한을 취해 급수의 합을 구할 수 있다.","eqL":"n&#8594;&#8734;","eqR":"<span class=\"v\">S<\/span><sub><span class=\"v\">n<\/span><\/sub> <span class=\"m\">=<\/span> <span class=\"m\">1<\/span>"},{"order":12,"no":"개념 12","unit":"II. 지수함수와 로그함수의 미분","sec":"01 지수함수의 극한과 미분","title":"지수함수의 극한","p1":"<span class=\"term\" data-t=\"base\">밑<\/span> <span class=\"v\">a<\/span>가 1보다 큰 <span class=\"term\" data-t=\"expfunc\">지수함수<\/span> <span class=\"v\">y<\/span> = <span class=\"v\">a<\/span>^<span class=\"v\">x<\/span> 에서, <span class=\"v\">a<\/span> > 1이면 <span class=\"v\">x<\/span>가 한없이 커질수록 <span class=\"v\">y<\/span>도 한없이 커진다.","p2":"이때 그래프는 <span class=\"v\">x<\/span>가 한없이 작아질수록 0에 가까워지며, <span class=\"v\">y<\/span> = 0을 <span class=\"term\" data-t=\"asymptote\">점근선<\/span>으로 갖는다. 반대로 0 < <span class=\"v\">a<\/span> < 1이면 <span class=\"v\">x<\/span>가 커질수록 0으로 <span class=\"term\" data-t=\"converge\">수렴<\/span>하고, <span class=\"v\">x<\/span>가 작아질수록 값이 한없이 커진다.","eqL":"x&#8594;&minus;&#8734;","eqR":"<span class=\"v\">a<\/span><sup><span class=\"v\">x<\/span><\/sup> <span class=\"m\">=<\/span> <span class=\"m\">0<\/span>"}]};
+/*DATA:END*/
+// DATA는 build.py가 content/*.md 를 읽어 위 마커 사이에 주입합니다.
+// 아래는 그 데이터를 앱이 쓰는 형태(TIPS/PAGES)로 펴는 코드입니다.
+function curveFn(expr){
+ try{ return new Function('n','return ('+expr+');'); }
+ catch(e){ return function(){ return 100; }; }
+}
+var TIPS={},PAGES=[],REL={};
+Object.keys(DATA.tips).forEach(function(k){
+ var t=DATA.tips[k], f=curveFn(t.curve);
+ TIPS[k]={title:t.title,cat:t.cat||'팁개념',ic:t.ic,def:t.def,
+  pts:seq(function(n){var v=f(n);return (typeof v==='number'&&isFinite(v))?v:100;}),
+  lines:t.lines||[],lab:t.lab,steps:t.steps};
+ REL[k]=(t.rel||[]).filter(function(x){return x!==k;});
+});
+PAGES=DATA.pages.slice();
 function eqHTML(p){
  var inner=p.eqL?'<span class="lim"><span class="m">lim</span><small class="v">'+p.eqL+'</small></span><span>'+p.eqR+'</span>':'<span>'+p.eqR+'</span>';
  return '<div class="eqwrap"><div class="eq">'+inner+'</div></div>';
 }
-var book=document.getElementById('book'),dots=document.getElementById('dots'),stage=document.getElementById('stage'),pop=document.getElementById('pop'),veil=document.getElementById('veil'),blur=document.getElementById('blur'),bar=document.getElementById('bar'),hint=document.getElementById('hint');
+var book=document.getElementById('book'),dots=document.getElementById('dots'),stage=document.getElementById('stage'),veil=document.getElementById('veil'),blur=document.getElementById('blur'),bar=document.getElementById('bar'),hint=document.getElementById('hint');
 var sheets=[];
 PAGES.forEach(function(p,i){
  var d=document.createElement('div');d.className='sheet';
- d.innerHTML='<div class="pad"><div class="kicker">'+p.no+'</div><div class="title">'+p.title+'</div><p class="body">'+p.p1+'</p>'+eqHTML(p)+'<p class="body">'+p.p2+'</p></div>';
+ d.innerHTML='<div class="zoomwrap"><div class="pad"><div class="kicker">'+p.no+'</div><div class="title">'+p.title+'</div><p class="body">'+p.p1+'</p>'+eqHTML(p)+'<p class="body">'+p.p2+'</p></div></div><div class="zoombadge"></div>';
  book.appendChild(d);
  sheets.push(d);
  var dot=document.createElement('span');dot.className='pdot'+(i===0?' on':'');dots.appendChild(dot);
@@ -346,26 +254,11 @@ function graphSVG(t){
  t.pts.forEach(function(cy,i){s+='<circle class="pt" data-i="'+i+'" cx="'+xs(i)+'" cy="'+cl(cy).toFixed(1)+'" r="4"/>';});
  return s+'</svg>';
 }
-var timer=null,tip=null,step=0;
-var STACK=[];
-function paint(){
- var t=TIPS[tip],s=t.steps[step];
- pop.querySelectorAll('.pt').forEach(function(c){
-  var i=+c.getAttribute('data-i'),on=i<s.show;
-  c.style.transitionDelay=(on&&c.style.opacity!=1)?(i*40)+'ms':'0ms';
-  c.style.opacity=on?1:0;
- });
- pop.querySelectorAll('[data-aux]').forEach(function(l){l.style.opacity=s.line?1:0;});
- var lab=pop.querySelector('[data-lab]');if(lab)lab.style.opacity=s.label?1:0;
- pop.querySelector('.cap').textContent=s.caption;
- t.steps.forEach(function(_,i){pop.querySelector('[data-seg="'+i+'"]').style.background=i<=step?'var(--accent)':'var(--border)';});
-}
-var REL={converge:['limitvalue','diverge'],limitvalue:['converge','squeeze'],diverge:['oscillate','converge'],
- oscillate:['diverge','converge'],geoseq:['ratio','firstterm'],ratio:['geoseq','geoseries'],
- series:['partial','sumval'],partial:['series','sumval'],sumval:['partial','nthzero'],
- nthzero:['series','diverge'],geoseries:['geoseq','sumval'],firstterm:['geoseq','ratio'],
- linearity:['converge','limitvalue'],indeterminate:['degree','diverge'],degree:['indeterminate','converge'],
- squeeze:['converge','limitvalue']};
+// ---- 팁개념 스택: 여러 개를 동시에 열어 쌓아둡니다 ----
+// 배경 1탭 = 맨 위 하나만 닫기 / 배경 슬라이드 = 전부 닫기
+var POPS=[];              // [{key, el, timer, step}]
+var MAXPOP=5;             // 그 이상은 가장 오래된 것부터 밀어냅니다
+
 function relHTML(key){
  var r=(REL[key]||[]).filter(function(x){return TIPS[x];});
  if(!r.length) return '';
@@ -373,40 +266,100 @@ function relHTML(key){
   + r.map(function(x){return '<button class="relchip" data-rel="'+x+'">'+TIPS[x].title+'</button>';}).join('')
   + '</div>';
 }
-function openPop(key,el,noPush){
- if(!noPush){ if(STACK[STACK.length-1]!==key) STACK.push(key); }
- tip=key;step=0;
+
+function paintPop(p){
+ var t=TIPS[p.key], s=t.steps[p.step], el=p.el;
+ el.querySelectorAll('.pt').forEach(function(c){
+  var i=+c.getAttribute('data-i'),on=i<s.show;
+  c.style.transitionDelay=(on&&c.style.opacity!=1)?(i*40)+'ms':'0ms';
+  c.style.opacity=on?1:0;
+ });
+ el.querySelectorAll('[data-aux]').forEach(function(l){l.style.opacity=s.line?1:0;});
+ var lab=el.querySelector('[data-lab]');if(lab)lab.style.opacity=s.label?1:0;
+ var cap=el.querySelector('.cap'); if(cap) cap.textContent=s.caption;
+ t.steps.forEach(function(_,i){
+  var seg=el.querySelector('[data-seg="'+i+'"]');
+  if(seg) seg.style.background=i<=p.step?'var(--accent)':'var(--border)';
+ });
+}
+
+// 스택 안에서의 위치에 따라 뒤 카드가 위로 살짝 보이게 배치합니다.
+function layout(){
+ var n=POPS.length;
+ POPS.forEach(function(p,i){
+  var d=n-1-i;                       // 0 = 맨 앞
+  p.el.style.zIndex=String(6+i);
+  p.el.style.transform='translateY('+(-d*11)+'px) scale('+(1-d*0.028).toFixed(3)+')';
+  p.el.style.opacity=d>3?0:1;
+  p.el.style.filter=d?'brightness('+(1-d*0.04).toFixed(2)+')':'none';
+  var depth=p.el.querySelector('.popdepth');
+  if(depth) depth.textContent = n>1
+    ? (n+'개 열림 · 배경 탭 1개씩 · 밀면 전부')
+    : '배경을 탭하면 닫힘';
+ });
+ veil.classList.toggle('on', n>0);
+ blur.classList.toggle('on', n>0);
+}
+
+function openPop(key){
+ if(!TIPS[key]) return;
+ var existing=POPS.filter(function(p){return p.key===key;})[0];
+ if(existing){ // 이미 열려 있으면 맨 앞으로
+  POPS.splice(POPS.indexOf(existing),1); POPS.push(existing); layout(); return;
+ }
+ while(POPS.length>=MAXPOP) removePop(POPS[0]);
+
  var t=TIPS[key];
+ var el=document.createElement('div');
+ el.className='pop';
  var segs=t.steps.map(function(_,i){return '<span class="seg" data-seg="'+i+'"></span>';}).join('');
- pop.innerHTML='<div class="pophandle"></div><div style="display:flex;align-items:center;gap:9px;margin-bottom:9px"><span class="badge">'+t.ic+'</span><span><span style="display:block;font-size:11px;color:var(--accent);font-weight:600">'+t.cat+'</span><span style="display:block;font-size:14px;font-weight:600">'+t.title+'</span></span>'
-  +(STACK.length>1 ? '<span class="popdepth">'+STACK.length+'단계 · 배경을 탭하면 뒤로</span>' : '<span class="popdepth">배경을 탭하면 닫힘</span>')
-  +'</div><div style="display:flex;gap:4px;margin-bottom:8px">'+segs+'</div>'+graphSVG(t)+'<p class="cap"></p><div class="defbox"><div class="deflabel">한 줄 정의</div><div class="deftext">'+t.def+'</div></div>'+relHTML(key);
- pop.querySelectorAll('[data-rel]').forEach(function(b){
+ el.innerHTML='<div class="pophandle"></div><div style="display:flex;align-items:center;gap:9px;margin-bottom:9px"><span class="badge">'+t.ic+'</span><span><span style="display:block;font-size:11px;color:var(--accent);font-weight:600">'+t.cat+'</span><span style="display:block;font-size:14px;font-weight:600">'+t.title+'</span></span><span class="popdepth"></span></div><div style="display:flex;gap:4px;margin-bottom:8px">'+segs+'</div>'+graphSVG(t)+'<p class="cap"></p><div class="defbox"><div class="deflabel">한 줄 정의</div><div class="deftext">'+t.def+'</div></div>'+relHTML(key);
+ el.style.transform='translateY(101%)';
+ stage.appendChild(el);
+
+ var p={key:key,el:el,timer:null,step:0};
+ POPS.push(p);
+
+ el.querySelectorAll('[data-rel]').forEach(function(b){
   b.addEventListener('pointerdown',function(e){e.preventDefault();e.stopPropagation();});
   b.addEventListener('pointerup',function(e){e.stopPropagation();});
-  b.addEventListener('click',function(e){e.stopPropagation();openPop(b.getAttribute('data-rel'),b);});
+  b.addEventListener('click',function(e){e.stopPropagation();openPop(b.getAttribute('data-rel'));});
  });
- pop.classList.add('on');
- veil.classList.add('on');blur.classList.add('on');
- paint();
- timer=setInterval(function(){
-  if(step<TIPS[tip].steps.length-1){step++;paint();}else{clearInterval(timer);timer=null;}
+ // 팝업 본문 안의 용어도 눌러서 새 팝업을 쌓을 수 있게
+ el.querySelectorAll('.term').forEach(function(tm){
+  tm.addEventListener('click',function(e){e.stopPropagation();openPop(tm.getAttribute('data-t'));});
+ });
+
+ el.offsetHeight;              // reflow: 진입 애니메이션이 보이도록
+ el.classList.add('on');
+ layout();
+ paintPop(p);
+ p.timer=setInterval(function(){
+  if(p.step<TIPS[p.key].steps.length-1){p.step++;paintPop(p);}
+  else{clearInterval(p.timer);p.timer=null;}
  },1000);
 }
-function closeAllPops(){
- STACK=[];
- if(timer){clearInterval(timer);timer=null;}
- pop.classList.remove('on');veil.classList.remove('on');blur.classList.remove('on');
+
+function removePop(p){
+ var i=POPS.indexOf(p); if(i<0) return;
+ POPS.splice(i,1);
+ if(p.timer){clearInterval(p.timer);p.timer=null;}
+ p.el.classList.remove('on');
+ p.el.style.transform='translateY(101%)';
+ setTimeout(function(){ if(p.el.parentNode) p.el.parentNode.removeChild(p.el); },300);
 }
-function popOne(){
- if(STACK.length<=1){ closeAllPops(); return; }
- STACK.pop();
- openPop(STACK[STACK.length-1],null,true);
+
+function popOne(){                      // 배경 1탭
+ if(!POPS.length) return;
+ removePop(POPS[POPS.length-1]);
+ layout();
 }
-function closePop(){
- if(timer){clearInterval(timer);timer=null;}
- pop.classList.remove('on');veil.classList.remove('on');blur.classList.remove('on');
+function closeAllPops(){                // 배경 슬라이드
+ POPS.slice().forEach(removePop);
+ POPS=[];
+ layout();
 }
+var closePop=closeAllPops;
 
 var EXPO_KEY='mathtip_expo_v1';
 var EXPO=(function(){try{return JSON.parse(localStorage.getItem(EXPO_KEY))||{};}catch(e){return {};}})();
@@ -460,20 +413,21 @@ document.getElementById('tapR').addEventListener('click',function(e){e.stopPropa
 document.addEventListener('keydown',function(e){
  if(e.key==='ArrowRight'){turn(true);} else if(e.key==='ArrowLeft'){turn(false);}
 });
+// 블러된 배경: 탭하면 맨 위 한 겹만, 밀면(슬라이드) 전부 닫습니다.
 veil.addEventListener('pointerdown',function(e){
  e.preventDefault(); e.stopPropagation();
- veilDrag={x:e.clientX,y:e.clientY,t:Date.now()};
+ veilDrag={x:e.clientX,y:e.clientY,t:Date.now(),slid:false};
 });
 document.addEventListener('pointermove',function(e){
  if(!veilDrag) return;
  var dx=e.clientX-veilDrag.x, dy=e.clientY-veilDrag.y;
- if(Math.sqrt(dx*dx+dy*dy)>48 && Date.now()-veilDrag.t>220){ veilDrag=null; closeAllPops(); }
+ if(Math.sqrt(dx*dx+dy*dy)>44){ veilDrag.slid=true; veilDrag=null; closeAllPops(); }
 });
 document.addEventListener('pointerup',function(e){
  if(!veilDrag) return;
- var held=Date.now()-veilDrag.t;
+ var slid=veilDrag.slid;
  veilDrag=null;
- if(held>600) closeAllPops(); else popOne();
+ if(!slid) popOne();
 });
 document.addEventListener('pointerdown',function(e){
  if(penOn) return;
@@ -583,11 +537,15 @@ function fitCanvas(cv){
  if(cv.width!==Math.round(r.width*d)||cv.height!==Math.round(r.height*d)){
   cv.width=Math.round(r.width*d); cv.height=Math.round(r.height*d);
  }
- var g=cv.getContext('2d'); g.setTransform(d,0,0,d,0,0); return g;
+ var g=null;
+ try{ g=cv.getContext('2d'); }catch(e){}
+ if(!g) return null;            // 캔버스를 못 쓰는 환경이어도 앱 전체가 멈추지 않도록
+ g.setTransform(d,0,0,d,0,0); return g;
 }
 function redraw(i){
  var cv=inkCanvas(i); if(!cv) return;
- var g=fitCanvas(cv), r=cv.parentNode.getBoundingClientRect();
+ var g=fitCanvas(cv); if(!g) return;
+ var r=cv.parentNode.getBoundingClientRect();
  g.clearRect(0,0,r.width,r.height);
  var strokes=INK[i]||[];
  g.lineCap='round'; g.lineJoin='round'; g.strokeStyle='#F2653E'; g.lineWidth=2.4;
@@ -614,7 +572,8 @@ sheets.forEach(function(sh,i){
   e.preventDefault(); e.stopPropagation();
   var r=cv.parentNode.getBoundingClientRect();
   drawing.push([ (e.clientX-r.left)/r.width, (e.clientY-r.top)/r.height ]);
-  var g=cv.getContext('2d');
+  var g=null; try{ g=cv.getContext('2d'); }catch(err){}
+  if(!g) return;
   g.lineCap='round'; g.lineJoin='round'; g.strokeStyle='#F2653E'; g.lineWidth=2.4;
   var n=drawing.length;
   if(n>1){ g.beginPath(); g.moveTo(drawing[n-2][0]*r.width, drawing[n-2][1]*r.height); g.lineTo(drawing[n-1][0]*r.width, drawing[n-1][1]*r.height); g.stroke(); }
@@ -646,6 +605,183 @@ document.getElementById('inkClear').addEventListener('click',function(e){
 });
 window.addEventListener('resize',redrawAll);
 redrawAll();
+
+// ================= 두 손가락 확대/축소 + 길게 눌러 필기 =================
+var toastEl=document.getElementById('toast'), toastTimer=null;
+function toast(msg){
+ if(!toastEl) return;
+ toastEl.textContent=msg; toastEl.classList.add('on');
+ clearTimeout(toastTimer);
+ toastTimer=setTimeout(function(){ toastEl.classList.remove('on'); },1400);
+}
+
+// 페이지별 확대 상태
+var ZOOM=[];   // {s, x, y}
+function zoomState(i){ return ZOOM[i] || (ZOOM[i]={s:1,x:0,y:0}); }
+function zoomWrap(i){ return sheets[i] && sheets[i].querySelector('.zoomwrap'); }
+var MINS=1, MAXS=3.2;
+
+function applyZoom(i,animate){
+ var z=zoomState(i), w=zoomWrap(i); if(!w) return;
+ var sh=sheets[i];
+ // 확대 상태에서 빈 공간이 보이지 않도록 이동범위를 제한
+ var r=sh.getBoundingClientRect();
+ var maxX=Math.max(0,(z.s-1)*r.width), maxY=Math.max(0,(z.s-1)*r.height);
+ z.x=Math.min(0,Math.max(-maxX,z.x));
+ z.y=Math.min(0,Math.max(-maxY,z.y));
+ w.style.transition=animate?'transform .22s cubic-bezier(.2,.8,.25,1)':'none';
+ w.style.transform='translate('+z.x.toFixed(1)+'px,'+z.y.toFixed(1)+'px) scale('+z.s.toFixed(3)+')';
+ sh.classList.toggle('zoomed', z.s>1.01);
+ var badge=sh.querySelector('.zoombadge');
+ if(badge){ badge.textContent=z.s.toFixed(1)+'×'; badge.classList.toggle('on', z.s>1.01); }
+}
+function resetZoom(i,animate){
+ var z=zoomState(i); z.s=1; z.x=0; z.y=0; applyZoom(i,animate!==false);
+}
+function isZoomed(i){ return zoomState(i).s>1.01; }
+
+// ---- 포인터 추적 (핀치 판정용) ----
+var pts={}, pinch=null, longTimer=null, longStart=null;
+
+function dist(a,b){ var dx=a.x-b.x, dy=a.y-b.y; return Math.sqrt(dx*dx+dy*dy); }
+function mid(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
+
+document.addEventListener('pointerdown',function(e){
+ if(e.target.closest && (e.target.closest('.pop')||e.target.closest('.toc')||e.target.closest('.qa')||e.target.closest('.guide')||e.target.closest('.inkbar')||e.target.closest('.top'))) return;
+ // 첫 손가락이면 이전 제스처의 잔여 포인터를 정리합니다.
+ // (pointerup을 놓치는 경우가 있어 이게 없으면 제스처가 영구히 어긋납니다)
+ if(e.isPrimary!==false) pts={};
+ pts[e.pointerId]={x:e.clientX,y:e.clientY};
+ var ids=Object.keys(pts);
+
+ if(ids.length===2){
+  // 두 손가락 -> 핀치 시작. 페이지 넘김/필기 예약은 취소.
+  clearTimeout(longTimer); longTimer=null; longStart=null;
+  drag=null;
+  var a=pts[ids[0]], b=pts[ids[1]];
+  var z=zoomState(idx);
+  pinch={d0:dist(a,b), s0:z.s, m0:mid(a,b), x0:z.x, y0:z.y};
+  return;
+ }
+
+ if(ids.length===1 && !penOn && POPS.length===0){
+  // 길게 누르면 필기 모드 (제스처로 진입)
+  longStart={x:e.clientX,y:e.clientY};
+  clearTimeout(longTimer);
+  longTimer=setTimeout(function(){
+   longTimer=null;
+   if(!longStart) return;
+   drag=null;
+   setPen(true);
+   toast('필기 모드 · 손가락으로 쓰세요');
+   if(navigator.vibrate) try{ navigator.vibrate(12); }catch(err){}
+  },620);
+ }
+},{passive:true});
+
+document.addEventListener('pointermove',function(e){
+ if(!(e.pointerId in pts)) return;
+ pts[e.pointerId]={x:e.clientX,y:e.clientY};
+
+ if(longStart && longTimer){
+  // 조금이라도 움직이면 길게누르기 취소 (넘김/스크롤 의도)
+  if(Math.abs(e.clientX-longStart.x)>9||Math.abs(e.clientY-longStart.y)>9){
+   clearTimeout(longTimer); longTimer=null; longStart=null;
+  }
+ }
+
+ if(pinch){
+  var ids=Object.keys(pts);
+  if(ids.length<2) return;
+  e.preventDefault();
+  var a=pts[ids[0]], b=pts[ids[1]];
+  var z=zoomState(idx);
+  var ns=Math.min(MAXS,Math.max(MINS, pinch.s0 * (dist(a,b)/(pinch.d0||1))));
+  var m=mid(a,b);
+  var sh=sheets[idx], r=sh.getBoundingClientRect();
+  // 손가락 중점을 기준으로 확대 + 중점 이동만큼 패닝
+  var cx=pinch.m0.x-r.left, cy=pinch.m0.y-r.top;
+  var k=ns/(pinch.s0||1);
+  z.s=ns;
+  z.x=pinch.x0 - cx*(k-1) + (m.x-pinch.m0.x);
+  z.y=pinch.y0 - cy*(k-1) + (m.y-pinch.m0.y);
+  applyZoom(idx,false);
+ }
+},{passive:false});
+
+function clearPointer(e){
+ delete pts[e.pointerId];
+ var n=Object.keys(pts).length;
+ if(pinch && n<2){
+  pinch=null;
+  var z=zoomState(idx);
+  if(z.s<1.04) resetZoom(idx,true); else applyZoom(idx,true);
+ }
+ if(n===0){ clearTimeout(longTimer); longTimer=null; longStart=null; }
+}
+document.addEventListener('pointerup',clearPointer,{passive:true});
+document.addEventListener('pointercancel',clearPointer,{passive:true});
+
+// 확대된 상태에서 한 손가락 = 패닝 (페이지 넘김 대신)
+var panStart=null;
+document.addEventListener('pointerdown',function(e){
+ if(penOn||pinch) return;
+ if(!isZoomed(idx)) return;
+ if(e.target.closest && (e.target.closest('.pop')||e.target.closest('.top')||e.target.closest('.qa'))) return;
+ var z=zoomState(idx);
+ panStart={x:e.clientX,y:e.clientY,x0:z.x,y0:z.y};
+ drag=null;
+},{passive:true});
+document.addEventListener('pointermove',function(e){
+ if(!panStart||pinch) return;
+ e.preventDefault();
+ var z=zoomState(idx);
+ z.x=panStart.x0+(e.clientX-panStart.x);
+ z.y=panStart.y0+(e.clientY-panStart.y);
+ applyZoom(idx,false);
+},{passive:false});
+document.addEventListener('pointerup',function(){ panStart=null; },{passive:true});
+document.addEventListener('pointercancel',function(){ panStart=null; },{passive:true});
+
+// 더블탭으로 확대/원복
+var lastTap=0;
+document.addEventListener('pointerup',function(e){
+ if(penOn||pinch||POPS.length) return;
+ if(e.target.closest && (e.target.closest('.pop')||e.target.closest('.top')||e.target.closest('.qa')||e.target.closest('.toc')||e.target.closest('.term'))) return;
+ var now=Date.now();
+ if(now-lastTap<300){
+  lastTap=0;
+  var z=zoomState(idx);
+  if(isZoomed(idx)) resetZoom(idx,true);
+  else{
+   var sh=sheets[idx], r=sh.getBoundingClientRect();
+   var cx=e.clientX-r.left, cy=e.clientY-r.top;
+   z.s=2.2; z.x=-cx*(z.s-1); z.y=-cy*(z.s-1);
+   applyZoom(idx,true);
+  }
+ } else lastTap=now;
+},{passive:true});
+
+// 페이지를 넘기면 그 페이지의 확대는 원복
+var _animateTo=animateTo;
+animateTo=function(to,done){
+ if(isZoomed(idx)) resetZoom(idx,false);
+ return _animateTo(to,done);
+};
+
+// 확대 중에는 좌우 스와이프로 페이지가 넘어가지 않도록
+var _turn=turn;
+turn=function(next){
+ if(isZoomed(idx)){ resetZoom(idx,true); return; }
+ return _turn(next);
+};
+
+// 필기 모드를 나가면 안내
+var _setPen=setPen;
+setPen=function(on){
+ _setPen(on);
+ if(!on) toast('읽기 모드');
+};
 
 styleTerms();countExposure(0);markTOC();
 var installBtn=document.getElementById('installBtn'),guide=document.getElementById('guide'),guideBody=document.getElementById('guideBody');
