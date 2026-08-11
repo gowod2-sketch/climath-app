@@ -1,0 +1,20 @@
+# 배포 산출물 (Netlify가 빌드 때 만듭니다)
+dist/
+
+# build.py 중간 산출물
+content-data.json
+
+# 파이썬 캐시
+__pycache__/
+*.pyc
+
+# 예전 수동 배포용 zip - 이제 git push가 배포를 대신합니다
+*.zip
+
+# 브라우저 업로드가 남긴 임시 파일
+zi[A-Za-z0-9]*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

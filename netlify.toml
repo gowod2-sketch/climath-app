@@ -1,0 +1,23 @@
+[build]
+  # build.py가 content/*.md 문법을 검사합니다.
+  # 검사에 실패하면 빌드가 여기서 멈추고 배포되지 않습니다 -
+  # 깨진 앱이 라이브로 나가는 것을 막는 안전장치입니다.
+  command = "python3 build.py && mkdir -p dist && cp index.html sw.js manifest.webmanifest icon.png _headers dist/"
+  publish = "dist"
+
+# 서비스워커는 절대 캐시되면 안 됩니다.
+# 캐시되면 새 배포가 사용자에게 영영 도달하지 않습니다.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache"
