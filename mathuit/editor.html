@@ -29,6 +29,11 @@ h1{margin:0 0 6px;font-size:28px;font-weight:700;}
 .loadbar .form-group{flex:1;margin-bottom:0;}
 .loadbar label{margin-bottom:6px;}
 
+.secretbar{display:flex;align-items:center;gap:10px;margin-bottom:22px;padding:12px 14px;background:var(--s1);border-radius:10px;flex-wrap:wrap;}
+.secretbar label{margin:0;white-space:nowrap;}
+.secretbar input{flex:1;min-width:180px;padding:9px 12px;}
+.secretnote{font-size:12px;color:var(--muted);}
+.secretnote.ok{color:var(--ok);}
 .form-group{margin-bottom:20px;}
 label{display:block;font-size:13px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.02em;}
 input[type="text"],input[type="number"],textarea,select{
@@ -77,6 +82,13 @@ button:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
 <div class="container">
 <h1>Mathuit 개념 편집기</h1>
 <div class="sub">저장하면 GitHub에 바로 commit되고, Netlify가 자동으로 빌드·배포합니다 (2~3분).</div>
+
+<div class="secretbar">
+  <label for="editor_secret">저장용 비밀키</label>
+  <input type="password" id="editor_secret" placeholder="Netlify의 EDITOR_SECRET 값" autocomplete="off">
+  <button class="btn-secondary" onclick="saveSecret()">기억</button>
+  <span class="secretnote" id="secret_state"></span>
+</div>
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('concept')">개념</button>
@@ -247,6 +259,27 @@ $$ lim_{n->oo} a_n = L $$
 
 <script>
 var FN = './.netlify/functions/save-content';
+var SECRET_KEY = 'mathuit_editor_secret';
+
+function getSecret(){
+  try { return localStorage.getItem(SECRET_KEY) || ''; } catch(e){ return ''; }
+}
+function saveSecret(){
+  var v = document.getElementById('editor_secret').value.trim();
+  try { localStorage.setItem(SECRET_KEY, v); } catch(e){}
+  showSecretState();
+}
+function showSecretState(){
+  var el = document.getElementById('secret_state');
+  var has = !!getSecret();
+  el.textContent = has ? '기억됨 — 이 브라우저에서 저장할 수 있습니다' : '비밀키가 없으면 저장이 거부됩니다';
+  el.className = 'secretnote' + (has ? ' ok' : '');
+}
+(function initSecret(){
+  var v = getSecret();
+  if (v) document.getElementById('editor_secret').value = v;
+  showSecretState();
+})();
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -481,9 +514,11 @@ async function doSave(type, filename, content, statusId, btnId, selectId) {
   btn.disabled = true;
   setStatus(statusId, '저장 중... GitHub에 commit하고 있습니다.', 'pending');
   try {
+    var secret = document.getElementById('editor_secret').value.trim() || getSecret();
+    if (!secret) throw new Error('저장용 비밀키를 먼저 입력하세요 (Netlify 환경변수 EDITOR_SECRET 값)');
     var res = await fetch(FN, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Editor-Secret': secret },
       body: JSON.stringify({ type: type, filename: filename, content: content }),
     });
     var data = await res.json();
