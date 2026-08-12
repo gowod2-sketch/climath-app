@@ -36,7 +36,7 @@ body{background:var(--s0);color:var(--text);font-family:"Pretendard Variable",-a
 .round{width:32px;height:32px;border-radius:11px;background:var(--s2);color:var(--accent);box-shadow:var(--shadow);display:inline-flex;align-items:center;justify-content:center;font-size:17px;flex:0 0 auto;}
 .pill{font-size:12px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:999px;padding:5px 13px;white-space:nowrap;}
 .sub{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.stage{position:relative;flex:1 1 auto;min-height:0;background:transparent;overflow:hidden;margin:0 8px 6px;display:flex;flex-direction:column;}
+.stage{position:relative;isolation:isolate;flex:1 1 auto;min-height:0;background:transparent;overflow:hidden;margin:0 8px 6px;display:flex;flex-direction:column;}
 .blurwrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;transition:filter .18s ease;}
 .blurwrap.on{filter:blur(3px);}
 .book{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;background:transparent;touch-action:pan-y;}
@@ -59,7 +59,7 @@ body{background:var(--s0);color:var(--text);font-family:"Pretendard Variable",-a
 .pdot.on{width:20px;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
 .veil{position:absolute;inset:0;background:rgba(0,0,0,.20);opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:5;}
 .veil.on{opacity:1;pointer-events:auto;}
-.pop{position:absolute;left:0;right:0;bottom:0;z-index:6;width:auto;max-width:none;height:var(--ph,72%);min-height:200px;max-height:94%;display:flex;flex-direction:column;overflow:hidden;background:var(--s2);border:none;border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(27,32,51,.20);padding:0;opacity:0;transform:translateY(101%);pointer-events:none;transition:transform .28s cubic-bezier(.2,.8,.25,1),opacity .18s ease;}
+.pop{position:absolute;left:0;right:0;bottom:0;z-index:20;width:auto;max-width:none;height:var(--ph,64%);min-height:240px;max-height:90%;display:flex;flex-direction:column;overflow:hidden;background:var(--s2);border:none;border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(27,32,51,.20);padding:0;opacity:0;transform:translateY(101%);pointer-events:none;transition:transform .28s cubic-bezier(.2,.8,.25,1),opacity .18s ease;}
 .pop.sizing{transition:opacity .18s ease;}
 .pophead{flex:0 0 auto;padding:8px 16px 6px;cursor:ns-resize;touch-action:none;background:var(--s2);border-radius:22px 22px 0 0;}
 .popbody{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 20px;overscroll-behavior:contain;}
@@ -108,7 +108,7 @@ body.pen .tapzone{pointer-events:none;}
 body.pen .term{cursor:default;}
 .penbtn{width:32px;height:32px;border-radius:11px;border:none;background:var(--s2);color:var(--muted);box-shadow:var(--shadow);cursor:pointer;font-size:14px;flex:0 0 auto;}
 .penbtn.on{background:var(--aux);color:#fff;}
-.inkbar{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:9;display:none;align-items:center;gap:8px;background:var(--s2);border-radius:18px;padding:7px 10px;box-shadow:var(--shadow2);max-width:calc(100% - 20px);flex-wrap:wrap;justify-content:center;}
+.inkbar{position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;display:none;align-items:center;gap:8px;background:var(--s2);border-radius:18px;padding:7px 10px;box-shadow:var(--shadow2);max-width:calc(100% - 20px);flex-wrap:wrap;justify-content:center;}
 .swatches{display:flex;gap:5px;align-items:center;}
 .swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;background:var(--c);cursor:pointer;padding:0;flex:0 0 auto;transition:transform .15s,border-color .15s;}
 .swatch.on{border-color:var(--text);transform:scale(1.18);}
@@ -297,13 +297,13 @@ function paintPop(p){
 var PH_KEY='mathtip_poph_v1';
 var POPH=(function(){
  var v=parseFloat(localStorage.getItem(PH_KEY));
- return (isNaN(v)||v<25||v>94) ? 72 : v;
+ return (isNaN(v)||v<36||v>90) ? 64 : v;
 })();
 function applyPopHeight(){
  stage.style.setProperty('--ph', POPH.toFixed(1)+'%');
 }
 function setPopHeight(v,save){
- POPH=Math.max(28,Math.min(94,v));
+ POPH=Math.max(36,Math.min(90,v));
  applyPopHeight();
  if(save){ try{ localStorage.setItem(PH_KEY,String(POPH)); }catch(e){} }
 }
@@ -335,7 +335,7 @@ function attachResize(el){
   el.classList.remove('sizing');
   var stageH=stage.getBoundingClientRect().height||1;
   // 아래로 크게 내리면 닫기
-  if(dy/stageH*100 > 22){ setPopHeight(72,true); popOne(); return; }
+  if(dy/stageH*100 > 22){ setPopHeight(64,true); popOne(); return; }
   if(moved) setPopHeight(POPH,true);
  }
  head.addEventListener('pointerup',done);
