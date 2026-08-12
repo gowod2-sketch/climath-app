@@ -1,0 +1,180 @@
+{
+  "name": "Claude + Notion 자동화 파이프라인",
+  "nodes": [
+    {
+      "parameters": {
+        "interval": [
+          {
+            "unit": "hours",
+            "value": 24
+          }
+        ]
+      },
+      "id": "trigger-daily",
+      "name": "Trigger: Daily Schedule",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "trigger-1"
+    },
+    {
+      "parameters": {
+        "resource": "database",
+        "operation": "query",
+        "databaseId": "{{ env.NOTION_DATABASE_ID }}",
+        "returnAll": true,
+        "options": {}
+      },
+      "id": "notion-read",
+      "name": "Read Notion Database",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "notionApi": "notion-api"
+      }
+    },
+    {
+      "parameters": {
+        "resource": "generic",
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefined",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {
+          "headers": {
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json"
+          }
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "claude-3-5-sonnet-20241022"
+            },
+            {
+              "name": "max_tokens",
+              "value": "1024"
+            },
+            {
+              "name": "messages",
+              "value": "[{\"role\": \"user\", \"content\": \"{{ $json.body }}\"}]"
+            }
+          ]
+        }
+      },
+      "id": "claude-api",
+      "name": "Call Claude API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        650,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": "claude-api-key"
+      }
+    },
+    {
+      "parameters": {
+        "resource": "pageBlock",
+        "operation": "create",
+        "pageId": "{{ env.NOTION_PAGE_ID }}",
+        "title": "{{ $json.title }}",
+        "content": "{{ $json.content }}"
+      },
+      "id": "notion-write",
+      "name": "Write to Notion Page",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        850,
+        300
+      ],
+      "credentials": {
+        "notionApi": "notion-api"
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ env.SLACK_WEBHOOK_URL }}",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "✅ n8n 자동화 완료! Notion 업데이트됨"
+            }
+          ]
+        }
+      },
+      "id": "slack-notify",
+      "name": "Slack Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1050,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "trigger-daily": {
+      "main": [
+        [
+          {
+            "node": "notion-read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "notion-read": {
+      "main": [
+        [
+          {
+            "node": "claude-api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "claude-api": {
+      "main": [
+        [
+          {
+            "node": "notion-write",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "notion-write": {
+      "main": [
+        [
+          {
+            "node": "slack-notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
