@@ -909,6 +909,7 @@ function mid(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
 
 document.addEventListener('pointerdown',function(e){
  if(e.target.closest && (e.target.closest('.pop')||e.target.closest('.toc')||e.target.closest('.qa')||e.target.closest('.guide')||e.target.closest('.inkbar')||e.target.closest('.top'))) return;
+ if(e.target.closest && e.target.closest('.quizopt')){ longStart=null; clearTimeout(longTimer); longTimer=null; return; }
  // 첫 손가락이면 이전 제스처의 잔여 포인터를 정리합니다.
  // (pointerup을 놓치는 경우가 있어 이게 없으면 제스처가 영구히 어긋납니다)
  if(e.isPrimary!==false) pts={};
@@ -990,6 +991,7 @@ var panStart=null;
 document.addEventListener('pointerdown',function(e){
  if(penOn||pinch) return;
  if(!isZoomed(idx)) return;
+ if(e.target.closest && e.target.closest('.quizopt')) return;
  if(e.target.closest && (e.target.closest('.pop')||e.target.closest('.top')||e.target.closest('.qa'))) return;
  var z=zoomState(idx);
  panStart={x:e.clientX,y:e.clientY,x0:z.x,y0:z.y};
