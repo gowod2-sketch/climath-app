@@ -1073,7 +1073,7 @@ guide.addEventListener('pointerdown',function(e){e.stopPropagation();});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(function(){});}
 // 배포 버전이 바뀌면 캐시 초기화·새로고침을 선택할 수 있게 한다.
 (function(){
- var APP_VERSION='2a1a424', key='mathuit-app-version', pop=document.getElementById('updatePop');
+ var APP_VERSION='e566252', key='mathuit-app-version', pop=document.getElementById('updatePop');
  var old=localStorage.getItem(key);
  if(old && old!==APP_VERSION && pop){pop.classList.add('on');}
  localStorage.setItem(key,APP_VERSION);
