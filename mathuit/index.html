@@ -1073,7 +1073,7 @@ guide.addEventListener('pointerdown',function(e){e.stopPropagation();});
  var last=loadLast();
  if(last>0){ idx=last; prog=last; apply(); countExposure(idx); markTOC(); }
 })();
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(function(){});}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(function(reg){reg.update();});}
 // 배포 버전이 바뀌면 캐시 초기화·새로고침을 선택할 수 있게 한다.
 (function(){
  var APP_VERSION='e566252', key='mathuit-app-version', pop=document.getElementById('updatePop');

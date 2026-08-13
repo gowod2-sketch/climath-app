@@ -1,15 +1,32 @@
-const C='mathtip-v15';
-self.addEventListener('install',e=>{self.skipWaiting();});
-self.addEventListener('activate',e=>{e.waitUntil(
-  caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k))))
-    .then(()=>self.clients.claim())
-);});
-self.addEventListener('fetch',e=>{
-if(e.request.method!=='GET')return;
-const u=new URL(e.request.url);
-// 다른 출처와 서버리스 함수(편집기 API)는 캐시하지 않습니다.
-if(u.origin!==self.location.origin)return;
-if(u.pathname.startsWith('/.netlify/'))return;
-e.respondWith(caches.open(C).then(c=>c.match(e.request).then(r=>{
-const n=fetch(e.request).then(res=>{c.put(e.request,res.clone());return res;}).catch(()=>r);
-return r||n;})));});
+const CACHE_NAME = 'mathtip-runtime-v16';
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/.netlify/')) return;
+
+  // Network-first: 배포 직후에는 항상 최신 파일을 우선 사용하고,
+  // 오프라인일 때만 마지막으로 성공한 응답을 사용한다.
+  event.respondWith(
+    fetch(event.request, { cache: 'no-store' })
+      .then((response) => {
+        if (response.ok) {
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone()));
+        }
+        return response;
+      })
+      .catch(() => caches.open(CACHE_NAME).then((cache) => cache.match(event.request)))
+  );
+});
