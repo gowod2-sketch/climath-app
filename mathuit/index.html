@@ -141,7 +141,7 @@ body.pen .inkbar{display:flex;}
 .guidecard button{width:100%;font-size:13px;padding:8px;border-radius:10px;border:.5px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;}
 .miniedit{position:absolute;inset:0;z-index:45;background:rgba(27,32,51,.45);display:none;align-items:flex-end;justify-content:center;padding:16px;}
 .miniedit.on{display:flex;}
-.minieditpanel{width:min(900px,100%);max-height:90%;overflow:auto;background:var(--s2);border-radius:18px 18px 16px 16px;box-shadow:var(--shadow2);padding:16px;}
+.minieditpanel{width:min(900px,100%);max-height:calc(100dvh - 32px);overflow:auto;background:var(--s2);border-radius:18px 18px 16px 16px;box-shadow:var(--shadow2);padding:16px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 .minihead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
 .minihead strong{font-size:16px;}
 .minidetail{font-size:12px;color:var(--muted);}
@@ -150,7 +150,8 @@ body.pen .inkbar{display:flex;}
 .minirow{display:grid;gap:6px;}
 .minirow label{margin:0;font-size:12px;text-transform:none;}
 .minirow textarea,.minirow input{width:100%;}
-.minitext{min-height:110px;resize:vertical;font-family:"Monaco","Courier New",monospace;font-size:13px;}
+.minitext{min-height:110px;max-height:240px;resize:vertical;overflow:auto;font-family:"Monaco","Courier New",monospace;font-size:13px;line-height:1.55;}
+.minihelp{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4;}
 </style>
 </head>
 <body>
@@ -183,10 +184,10 @@ body.pen .inkbar{display:flex;}
       <div class="minirow"><label>제목</label><input type="text" id="miniTitle"></div>
       <div class="minirow"><label>단원</label><input type="text" id="miniUnit"></div>
       <div class="minirow"><label>소단원</label><input type="text" id="miniSec"></div>
-      <div class="minirow"><label>왼쪽 식</label><input type="text" id="miniEqL"></div>
-      <div class="minirow"><label>오른쪽 식</label><input type="text" id="miniEqR"></div>
-      <div class="minirow"><label>본문 1</label><textarea class="minitext" id="miniP1"></textarea></div>
-      <div class="minirow"><label>본문 2</label><textarea class="minitext" id="miniP2"></textarea></div>
+      <div class="minirow"><label>왼쪽 식</label><input type="text" id="miniEqL" placeholder="예: n\\to\\infty"><div class="minihelp">LaTeX 입력: \\to, \\infty, ^{n}, _{n}</div></div>
+      <div class="minirow"><label>오른쪽 식</label><input type="text" id="miniEqR" placeholder="예: a_n = L"><div class="minihelp">HTML을 직접 입력하지 말고 수식만 입력하세요.</div></div>
+      <div class="minirow"><label>본문 1</label><textarea class="minitext" id="miniP1" placeholder="개념 설명을 입력하세요."></textarea></div>
+      <div class="minirow"><label>본문 2</label><textarea class="minitext" id="miniP2" placeholder="보충 설명을 입력하세요."></textarea></div>
     </div>
     <div class="button-group" style="margin-top:14px">
       <button class="btn-primary" id="miniApply">즉시 반영</button>
@@ -231,8 +232,20 @@ Object.keys(DATA.tips).forEach(function(k){
  REL[k]=(t.rel||[]).filter(function(x){return x!==k;});
 });
 PAGES=DATA.pages.slice();
+function latexToHTML(value){
+ var s=String(value||'');
+ if(!s) return '';
+ if(s.indexOf('<')>=0) return s;
+ s=s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+ s=s.replace(/\\infty/g,'∞').replace(/\\to/g,'→').replace(/\\pm/g,'±').replace(/\\le/g,'≤').replace(/\\ge/g,'≥');
+ s=s.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g,'<span class="frac"><span>$1</span><span>$2</span></span>');
+ s=s.replace(/\^\{([^{}]+)\}/g,'<sup>$1</sup>').replace(/_\{([^{}]+)\}/g,'<sub>$1</sub>');
+ s=s.replace(/\^([A-Za-z0-9]+)/g,'<sup>$1</sup>').replace(/_([A-Za-z0-9]+)/g,'<sub>$1</sub>');
+ return s;
+}
 function eqHTML(p){
- var inner=p.eqL?'<span class="lim"><span class="m">lim</span><small class="v">'+p.eqL+'</small></span><span>'+p.eqR+'</span>':'<span>'+p.eqR+'</span>';
+ var left=latexToHTML(p.eqL), right=latexToHTML(p.eqR);
+ var inner=left?'<span class="lim"><span class="m">lim</span><small class="v">'+left+'</small></span><span>'+right+'</span>':'<span>'+right+'</span>';
  return '<div class="eqwrap"><div class="eq">'+inner+'</div></div>';
 }
 function renderPageHTML(p){
