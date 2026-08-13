@@ -154,6 +154,7 @@ body.pen .inkbar{display:flex;}
 .quiz{margin:0;padding:22px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.55)}.quiz h3{margin:0 0 12px;font-size:18px}.quiz p{margin:0 0 18px;font-size:15px;line-height:1.7}.quizopts{display:grid;gap:12px}.quizopt{position:relative;text-align:left;border:0;background:transparent;border-radius:10px;padding:10px 12px 10px 42px;color:var(--text);cursor:pointer;font-size:15px}.quizopt:hover{background:rgba(255,255,255,.5)}.quiznum{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:22px}.quizcheck{position:absolute;left:4px;top:50%;width:34px;height:34px;transform:translateY(-50%) scale(.7);opacity:0}.quizopt.selected .quizcheck{opacity:1;transform:translateY(-50%) scale(1)}.quizcheck path{fill:none;stroke:#4d3828;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:28;stroke-dashoffset:28;animation:drawcheck .34s ease-out forwards}.quizcheck .rough{stroke:#98704b;stroke-width:1.1;stroke-dasharray:25;animation-delay:.04s;opacity:.7}@keyframes drawcheck{to{stroke-dashoffset:0}}</style>
 <style>.quiz{position:relative!important;z-index:35!important;touch-action:manipulation!important}.quizopt{position:relative;z-index:36;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.quizopt.selected .quizcheck path{animation:drawcheck .34s ease-out forwards!important;stroke-dasharray:28!important;stroke-dashoffset:28!important}</style>
 <style>.update-pop{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:90;width:min(420px,calc(100% - 28px));padding:15px 16px;border-radius:16px;background:#20263b;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.28);display:none;align-items:center;gap:12px;font-size:13px}.update-pop.on{display:flex}.update-pop span{flex:1}.update-pop button{border:0;border-radius:9px;padding:8px 11px;background:#7c83ff;color:#fff;font-weight:700;cursor:pointer}</style>
+<style>.problem-fields{display:none}.miniedit.problem-mode .concept-fields{display:none}.miniedit.problem-mode .problem-fields{display:grid}.problem-fields textarea{min-height:86px}.choice-grid{display:grid;gap:8px}.choice-line{display:grid;grid-template-columns:34px 1fr;align-items:center;gap:8px}.choice-line b{font-size:20px;text-align:center}.eqpad{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}.eqpad button{border:1px solid var(--line);background:var(--s1);border-radius:7px;padding:5px 8px;font-size:12px;cursor:pointer}</style>
 </head>
 <body>
 <div class="update-pop" id="updatePop"><span>새 버전이 배포되었습니다.<br>지금 업데이트할까요?</span><button id="updateNow">업데이트</button><button id="updateLater" style="background:#4a516d">나중에</button></div>
@@ -181,7 +182,7 @@ body.pen .inkbar{display:flex;}
       </div>
       <button id="miniClose" style="border:none;background:none;font-size:20px;color:var(--text2);cursor:pointer;line-height:1">&times;</button>
     </div>
-    <div class="minigrid">
+    <div class="minigrid concept-fields">
       <div class="minirow"><label>개념 번호</label><input type="text" id="miniNo"></div>
       <div class="minirow"><label>제목</label><input type="text" id="miniTitle"></div>
       <div class="minirow"><label>단원</label><input type="text" id="miniUnit"></div>
@@ -190,6 +191,12 @@ body.pen .inkbar{display:flex;}
       <div class="minirow"><label>오른쪽 식</label><input type="text" id="miniEqR"></div>
       <div class="minirow"><label>본문 1</label><textarea class="minitext" id="miniP1"></textarea></div>
       <div class="minirow"><label>본문 2</label><textarea class="minitext" id="miniP2"></textarea></div>
+    </div>
+    <div class="problem-fields">
+      <div class="minirow"><label>문제 내용</label><textarea class="minitext" id="miniQuestion" placeholder="학생이 풀 문제를 입력하세요."></textarea></div>
+      <div class="minirow"><label>문제 수식</label><input type="text" id="miniProblemEq" placeholder="버튼으로 수식을 조립하세요."><div class="eqpad" data-target="miniProblemEq"><button type="button" data-insert="frac">분수</button><button type="button" data-insert="sup">위첨자</button><button type="button" data-insert="sub">아래첨자</button><button type="button" data-insert="sqrt">√</button><button type="button" data-insert="→">→</button><button type="button" data-insert="∞">∞</button></div></div>
+      <div class="minirow"><label>보기 1~5</label><div class="choice-grid"><div class="choice-line"><b>①</b><input id="miniChoice1"></div><div class="choice-line"><b>②</b><input id="miniChoice2"></div><div class="choice-line"><b>③</b><input id="miniChoice3"></div><div class="choice-line"><b>④</b><input id="miniChoice4"></div><div class="choice-line"><b>⑤</b><input id="miniChoice5"></div></div></div>
+      <div class="minirow"><label>정답 보기</label><select id="miniAnswer"><option value="1">①</option><option value="2">②</option><option value="3">③</option><option value="4">④</option><option value="5">⑤</option></select></div>
     </div>
     <div class="button-group" style="margin-top:14px">
       <button class="btn-primary" id="miniApply">즉시 반영</button>
@@ -234,13 +241,13 @@ Object.keys(DATA.tips).forEach(function(k){
  REL[k]=(t.rel||[]).filter(function(x){return x!==k;});
 });
 PAGES=DATA.pages.slice();
-PAGES.splice(2,0,{order:2.5,no:'문제 01',unit:'I. 수열의 극한',sec:'확인 문제',title:'등비수열의 극한 확인',kind:'quiz',p1:'',p2:'',eqL:'',eqR:''});
+PAGES.splice(2,0,{order:2.5,no:'문제 01',unit:'I. 수열의 극한',sec:'확인 문제',title:'등비수열의 극한 확인',kind:'quiz',question:'공비의 절댓값이 1보다 작을 때 등비수열의 극한은?',problemEq:'',options:['0','1','∞','r','존재하지 않음'],answer:1,p1:'',p2:'',eqL:'',eqR:''});
 function eqHTML(p){
  var inner=p.eqL?'<span class="lim"><span class="m">lim</span><small class="v">'+p.eqL+'</small></span><span>'+p.eqR+'</span>':'<span>'+p.eqR+'</span>';
  return '<div class="eqwrap"><div class="eq">'+inner+'</div></div>';
 }
 function renderPageHTML(p){
- if(p.kind==='quiz'){var nums=['①','②','③','④','⑤'],vals=['0','1','∞','r','존재하지 않음'];return '<div class="zoomwrap"><div class="pad"><div class="kicker">'+p.no+'</div><div class="title">'+p.title+'</div><section class="quiz" aria-label="객관식 문제"><h3>확인 문제</h3><p>공비의 절댓값이 1보다 작을 때 등비수열의 극한은?</p><div class="quizopts">'+vals.map(function(v,i){return '<button class="quizopt" type="button"><span class="quiznum">'+nums[i]+'</span><span>'+v+'</span><svg class="quizcheck" viewBox="0 0 32 32"><path d="M5 17 L13 25 L28 7"></path></svg></button>';}).join('')+'</div></section></div></div><div class="zoombadge"></div>';}
+ if(p.kind==='quiz'){var nums=['①','②','③','④','⑤'],vals=p.options||['0','1','∞','r','존재하지 않음'];return '<div class="zoomwrap"><div class="pad"><div class="kicker">'+p.no+'</div><div class="title">'+p.title+'</div><section class="quiz" aria-label="객관식 문제"><h3>확인 문제</h3><p>'+((p.question||'').replace(/\n/g,'<br>'))+'</p>'+((p.problemEq)?eqHTML({eqL:'',eqR:p.problemEq}):'')+'<div class="quizopts">'+vals.map(function(v,i){return '<button class="quizopt" type="button"><span class="quiznum">'+nums[i]+'</span><span>'+v+'</span><svg class="quizcheck" viewBox="0 0 32 32"><path d="M5 17 L13 25 L28 7"></path></svg></button>';}).join('')+'</div></section></div></div><div class="zoombadge"></div>';}
  var quiz='';
  return '<div class="zoomwrap"><div class="pad"><div class="kicker">'+p.no+'</div><div class="title">'+p.title+'</div><p class="body">'+p.p1+'</p>'+eqHTML(p)+'<p class="body">'+p.p2+'</p>'+quiz+'</div></div><div class="zoombadge"></div>';
 }
@@ -633,9 +640,12 @@ var miniFields={
  p1:document.getElementById('miniP1'),
  p2:document.getElementById('miniP2')
 };
+var problemFields={question:document.getElementById('miniQuestion'),eq:document.getElementById('miniProblemEq'),options:[1,2,3,4,5].map(function(n){return document.getElementById('miniChoice'+n);}),answer:document.getElementById('miniAnswer')};
+document.querySelectorAll('.eqpad').forEach(function(pad){pad.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var input=document.getElementById(pad.dataset.target),insert={frac:'(분자)/(분모)',sup:'^( )',sub:'_( )',sqrt:'√( )','→':'→','∞':'∞'}[b.dataset.insert]||'';var pos=input.selectionStart||input.value.length;input.value=input.value.slice(0,pos)+insert+input.value.slice(pos);input.focus();input.setSelectionRange(pos+insert.length,pos+insert.length);});});
 function currentPage(){ return PAGES[idx]; }
 function openMiniEditor(){
  var p=currentPage(); if(!p) return;
+ mini.classList.toggle('problem-mode',p.kind==='quiz');
  miniFields.no.value=p.no||'';
  miniFields.title.value=p.title||'';
  miniFields.unit.value=p.unit||'';
@@ -644,6 +654,7 @@ function openMiniEditor(){
  miniFields.eqR.value=p.eqR||'';
  miniFields.p1.value=(p.p1||'').replace(/<br\s*\/?>/gi,'\n');
  miniFields.p2.value=(p.p2||'').replace(/<br\s*\/?>/gi,'\n');
+ if(p.kind==='quiz'){problemFields.question.value=p.question||'';problemFields.eq.value=p.problemEq||'';(p.options||['','','','','']).forEach(function(v,i){problemFields.options[i].value=v||'';});problemFields.answer.value=String(p.answer||1);}
  mini.classList.add('on');
 }
 function closeMiniEditor(){ mini.classList.remove('on'); }
@@ -657,6 +668,7 @@ function syncMiniToPage(){
  p.eqR=miniFields.eqR.value.trim();
  p.p1=miniFields.p1.value.trim().replace(/\n/g,'<br>');
  p.p2=miniFields.p2.value.trim().replace(/\n/g,'<br>');
+ if(p.kind==='quiz'){p.question=problemFields.question.value.trim();p.problemEq=problemFields.eq.value.trim();p.options=problemFields.options.map(function(input){return input.value.trim();});p.answer=parseInt(problemFields.answer.value,10)||1;}
  var s=sheets[idx]; if(s){ s.innerHTML=renderPageHTML(p); }
  var currentDot=dots.querySelectorAll('.pdot')[idx]; if(currentDot) currentDot.classList.add('on');
  var curTOC=tocBody.querySelectorAll('[data-go]')[idx];
