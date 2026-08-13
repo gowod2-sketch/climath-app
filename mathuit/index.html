@@ -129,6 +129,8 @@ body.pen .inkbar{display:flex;}
 .qa span{font-size:11px;color:var(--muted);}
 .tipbtn{margin-left:auto;width:32px;height:32px;border-radius:11px;border:none;background:var(--s2);color:var(--muted);box-shadow:var(--shadow);cursor:pointer;font-size:14px;font-weight:700;flex:0 0 auto;}
 .tipbtn.on{background:var(--accent-bg);color:var(--accent);}
+.editbtn{width:32px;height:32px;border-radius:11px;border:none;background:var(--s2);color:var(--accent);box-shadow:var(--shadow);cursor:pointer;font-size:14px;font-weight:700;flex:0 0 auto;}
+.editbtn.on{background:var(--accent-bg);color:var(--accent2);}
 .install{display:none;margin-left:8px;font-size:12px;font-weight:700;padding:7px 14px;border-radius:999px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;align-items:center;gap:5px;box-shadow:0 4px 12px rgba(76,95,213,.32);}
 .install.on{display:inline-flex;}
 .guide{position:absolute;inset:0;z-index:9;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:20px;}
@@ -137,11 +139,23 @@ body.pen .inkbar{display:flex;}
 .guidecard h3{margin:0 0 8px;font-size:15px;font-weight:600;}
 .guidecard ol{margin:0 0 12px;padding-left:18px;}
 .guidecard button{width:100%;font-size:13px;padding:8px;border-radius:10px;border:.5px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;}
+.miniedit{position:absolute;inset:0;z-index:45;background:rgba(27,32,51,.45);display:none;align-items:flex-end;justify-content:center;padding:16px;}
+.miniedit.on{display:flex;}
+.minieditpanel{width:min(900px,100%);max-height:90%;overflow:auto;background:var(--s2);border-radius:18px 18px 16px 16px;box-shadow:var(--shadow2);padding:16px;}
+.minihead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.minihead strong{font-size:16px;}
+.minidetail{font-size:12px;color:var(--muted);}
+.minigrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media (max-width:760px){.minigrid{grid-template-columns:1fr;}}
+.minirow{display:grid;gap:6px;}
+.minirow label{margin:0;font-size:12px;text-transform:none;}
+.minirow textarea,.minirow input{width:100%;}
+.minitext{min-height:110px;resize:vertical;font-family:"Monaco","Courier New",monospace;font-size:13px;}
 </style>
 </head>
 <body>
 <div class="bar"><i id="bar" style="width:33%"></i></div>
-<div class="top"><button class="round" id="tocBtn" aria-label="목차" style="border:none;cursor:pointer;font-size:15px;">&#9776;</button><span class="pill" id="pill">I. 수열의 극한</span><span class="sub" id="sec">01 수열의 극한</span><button class="penbtn" id="penBtn" aria-label="필기" title="터치 필기">&#9998;</button><button class="tipbtn on" id="tipBtn" aria-label="팁 표시 켜기/끄기" title="팁 강조 켜기/끄기">💡</button><button class="install" id="installBtn">&#8681; 앱 설치</button></div>
+<div class="top"><button class="round" id="tocBtn" aria-label="목차" style="border:none;cursor:pointer;font-size:15px;">&#9776;</button><span class="pill" id="pill">I. 수열의 극한</span><span class="sub" id="sec">01 수열의 극한</span><button class="penbtn" id="penBtn" aria-label="필기" title="터치 필기">&#9998;</button><button class="editbtn" id="editBtn" aria-label="편집" title="현재 개념 편집">✎</button><button class="tipbtn on" id="tipBtn" aria-label="팁 표시 켜기/끄기" title="팁 강조 켜기/끄기">💡</button><button class="install" id="installBtn">&#8681; 앱 설치</button></div>
 <div class="stage" id="stage">
   <div class="blurwrap" id="blur">
     <div class="book" id="book">
@@ -155,6 +169,30 @@ body.pen .inkbar{display:flex;}
     <h3>홈 화면에 앱으로 추가하기</h3>
     <div id="guideBody"></div>
     <button id="guideClose">닫기</button>
+  </div></div>
+  <div class="miniedit" id="miniedit"><div class="minieditpanel">
+    <div class="minihead">
+      <div>
+        <strong>미니 편집기</strong>
+        <div class="minidetail">지금 보고 있는 개념만 바로 수정하고 저장 없이 즉시 반영합니다.</div>
+      </div>
+      <button id="miniClose" style="border:none;background:none;font-size:20px;color:var(--text2);cursor:pointer;line-height:1">&times;</button>
+    </div>
+    <div class="minigrid">
+      <div class="minirow"><label>개념 번호</label><input type="text" id="miniNo"></div>
+      <div class="minirow"><label>제목</label><input type="text" id="miniTitle"></div>
+      <div class="minirow"><label>단원</label><input type="text" id="miniUnit"></div>
+      <div class="minirow"><label>소단원</label><input type="text" id="miniSec"></div>
+      <div class="minirow"><label>왼쪽 식</label><input type="text" id="miniEqL"></div>
+      <div class="minirow"><label>오른쪽 식</label><input type="text" id="miniEqR"></div>
+      <div class="minirow"><label>본문 1</label><textarea class="minitext" id="miniP1"></textarea></div>
+      <div class="minirow"><label>본문 2</label><textarea class="minitext" id="miniP2"></textarea></div>
+    </div>
+    <div class="button-group" style="margin-top:14px">
+      <button class="btn-primary" id="miniApply">즉시 반영</button>
+      <button class="btn-secondary" id="miniExport">현재값 복사</button>
+      <button class="btn-secondary" id="miniReset">원본 되돌리기</button>
+    </div>
   </div></div>
   <div class="toc" id="toc"><div class="tocpanel">
     <div class="tochead"><span style="font-size:15px;font-weight:700">목차</span><button id="tocClose" aria-label="닫기" style="border:none;background:none;font-size:18px;color:var(--text2);cursor:pointer;line-height:1">&times;</button></div>
@@ -197,11 +235,14 @@ function eqHTML(p){
  var inner=p.eqL?'<span class="lim"><span class="m">lim</span><small class="v">'+p.eqL+'</small></span><span>'+p.eqR+'</span>':'<span>'+p.eqR+'</span>';
  return '<div class="eqwrap"><div class="eq">'+inner+'</div></div>';
 }
+function renderPageHTML(p){
+ return '<div class="zoomwrap"><div class="pad"><div class="kicker">'+p.no+'</div><div class="title">'+p.title+'</div><p class="body">'+p.p1+'</p>'+eqHTML(p)+'<p class="body">'+p.p2+'</p></div></div><div class="zoombadge"></div>';
+}
 var book=document.getElementById('book'),dots=document.getElementById('dots'),stage=document.getElementById('stage'),veil=document.getElementById('veil'),blur=document.getElementById('blur'),bar=document.getElementById('bar'),hint=document.getElementById('hint');
 var sheets=[];
 PAGES.forEach(function(p,i){
- var d=document.createElement('div');d.className='sheet';
- d.innerHTML='<div class="zoomwrap"><div class="pad"><div class="kicker">'+p.no+'</div><div class="title">'+p.title+'</div><p class="body">'+p.p1+'</p>'+eqHTML(p)+'<p class="body">'+p.p2+'</p></div></div><div class="zoombadge"></div>';
+ var d=document.createElement('div');d.className='sheet';d.dataset.i=i;
+ d.innerHTML=renderPageHTML(p);
  book.appendChild(d);
  sheets.push(d);
  var dot=document.createElement('span');dot.className='pdot'+(i===0?' on':'');dots.appendChild(dot);
@@ -567,6 +608,58 @@ function markTOC(){
   el.classList.toggle('done', seen);
  });
 }
+var mini=document.getElementById('miniedit');
+var miniFields={
+ no:document.getElementById('miniNo'),
+ title:document.getElementById('miniTitle'),
+ unit:document.getElementById('miniUnit'),
+ sec:document.getElementById('miniSec'),
+ eqL:document.getElementById('miniEqL'),
+ eqR:document.getElementById('miniEqR'),
+ p1:document.getElementById('miniP1'),
+ p2:document.getElementById('miniP2')
+};
+function currentPage(){ return PAGES[idx]; }
+function openMiniEditor(){
+ var p=currentPage(); if(!p) return;
+ miniFields.no.value=p.no||'';
+ miniFields.title.value=p.title||'';
+ miniFields.unit.value=p.unit||'';
+ miniFields.sec.value=p.sec||'';
+ miniFields.eqL.value=p.eqL||'';
+ miniFields.eqR.value=p.eqR||'';
+ miniFields.p1.value=(p.p1||'').replace(/<br\s*\/?>/gi,'\n');
+ miniFields.p2.value=(p.p2||'').replace(/<br\s*\/?>/gi,'\n');
+ mini.classList.add('on');
+}
+function closeMiniEditor(){ mini.classList.remove('on'); }
+function syncMiniToPage(){
+ var p=currentPage(); if(!p) return;
+ p.no=miniFields.no.value.trim();
+ p.title=miniFields.title.value.trim();
+ p.unit=miniFields.unit.value.trim();
+ p.sec=miniFields.sec.value.trim();
+ p.eqL=miniFields.eqL.value.trim();
+ p.eqR=miniFields.eqR.value.trim();
+ p.p1=miniFields.p1.value.trim().replace(/\n/g,'<br>');
+ p.p2=miniFields.p2.value.trim().replace(/\n/g,'<br>');
+ var s=sheets[idx]; if(s){ s.innerHTML=renderPageHTML(p); }
+ var currentDot=dots.querySelectorAll('.pdot')[idx]; if(currentDot) currentDot.classList.add('on');
+ var curTOC=tocBody.querySelectorAll('[data-go]')[idx];
+ if(curTOC){
+  var tno=curTOC.querySelector('.tocno'), ttitle=curTOC.querySelector('.toctitle');
+  if(tno) tno.textContent=p.no||'';
+  if(ttitle) ttitle.textContent=p.title||'';
+ }
+ apply(); styleTerms(); markTOC();
+}
+function exportMini(){ 
+ var p=currentPage(); if(!p) return;
+ var out=['---','no: '+(miniFields.no.value.trim()),'title: '+(miniFields.title.value.trim()),'unit: '+(miniFields.unit.value.trim()),'sec: '+(miniFields.sec.value.trim()),'---','',miniFields.p1.value.trim(),'','$$ '+miniFields.eqL.value.trim()+' = '+miniFields.eqR.value.trim()+' $$','',miniFields.p2.value.trim()].join('\n').replace(/\n{3,}/g,'\n\n');
+ navigator.clipboard.writeText(out);
+ toast('현재 개념 텍스트를 복사했습니다');
+}
+function resetMini(){ openMiniEditor(); toast('원본값을 다시 불러왔습니다'); }
 document.getElementById('tocBtn').addEventListener('click',function(e){
  e.stopPropagation(); markTOC(); toc.classList.add('on');
 });
@@ -588,6 +681,30 @@ tipBtn.addEventListener('click',function(e){
 });
 syncTipBtn();
 
+document.getElementById('editBtn').addEventListener('click',function(e){
+ e.stopPropagation();
+ openMiniEditor();
+});
+document.getElementById('miniClose').addEventListener('click',function(e){
+ e.stopPropagation();
+ closeMiniEditor();
+});
+mini.addEventListener('pointerdown',function(e){
+ if(e.target===mini) closeMiniEditor();
+});
+document.getElementById('miniApply').addEventListener('click',function(e){
+ e.stopPropagation();
+ syncMiniToPage();
+ toast('현재 개념에 반영했습니다');
+});
+document.getElementById('miniExport').addEventListener('click',function(e){
+ e.stopPropagation();
+ exportMini();
+});
+document.getElementById('miniReset').addEventListener('click',function(e){
+ e.stopPropagation();
+ resetMini();
+});
 
 var INK_KEY='mathtip_ink_v1';
 var INK=(function(){try{return JSON.parse(localStorage.getItem(INK_KEY))||{};}catch(e){return {};}})();
