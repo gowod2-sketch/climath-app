@@ -254,6 +254,7 @@ PAGES.forEach(function(p,i){
  var dot=document.createElement('span');dot.className='pdot'+(i===0?' on':'');dots.appendChild(dot);
 });
 function selectQuizOption(e){var b=e.target.closest('.quizopt');if(!b)return;e.preventDefault();e.stopPropagation();b.parentElement.querySelectorAll('.quizopt').forEach(function(x){x.classList.remove('selected');});b.classList.add('selected');var path=b.querySelector('.quizcheck path');if(path){path.style.animation='none';void path.offsetWidth;path.style.animation='drawcheck 1s cubic-bezier(.2,.65,.35,1) forwards';}try{var C=window.AudioContext||window.webkitAudioContext,c=new C(),o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=520;g.gain.value=.06;o.connect(g).connect(c.destination);o.start();o.stop(c.currentTime+.12);}catch(err){}}
+document.querySelectorAll('.quizopt').forEach(function(option){option.addEventListener('pointerup',selectQuizOption,{passive:false});option.addEventListener('touchend',selectQuizOption,{passive:false});});
 book.addEventListener('pointerup',selectQuizOption,true);
 book.addEventListener('click',selectQuizOption,true);
 book.addEventListener('touchend',selectQuizOption,{capture:true,passive:false});
@@ -273,6 +274,9 @@ function apply(){
  for(var j=0;j<d2.length;j++) d2[j].classList.toggle('on', j===Math.round(prog));
  bar.style.width=Math.round((Math.round(prog)+1)/PAGES.length*100)+'%';
  var cur=PAGES[Math.round(prog)];
+ var quizPage=!!(cur&&cur.kind==='quiz');
+ document.getElementById('tapL').style.pointerEvents=quizPage?'none':'auto';
+ document.getElementById('tapR').style.pointerEvents=quizPage?'none':'auto';
  if(cur){document.getElementById('pill').textContent=cur.unit||'I. 수열의 극한';document.getElementById('sec').textContent=cur.sec||'';}
 }
 var settleTimer=null;
