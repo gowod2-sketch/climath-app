@@ -151,9 +151,7 @@ body.pen .inkbar{display:flex;}
 .minirow label{margin:0;font-size:12px;text-transform:none;}
 .minirow textarea,.minirow input{width:100%;}
 .minitext{min-height:110px;resize:vertical;font-family:"Monaco","Courier New",monospace;font-size:13px;}
-.quiz{margin:18px 0 8px;padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.55)}
-.quiz h3{margin:0 0 8px;font-size:14px}.quiz p{margin:0 0 10px;font-size:13px}.quizopts{display:grid;gap:7px}.quizopt{position:relative;text-align:left;border:1px solid var(--line);background:var(--s1);border-radius:10px;padding:9px 12px;color:var(--text);cursor:pointer;font-size:13px}.quizopt.selected{border-color:#6b4f35;background:#fffaf0}.quizcheck{position:absolute;right:10px;top:50%;width:25px;height:25px;transform:translateY(-50%) scale(.7);opacity:0}.quizopt.selected .quizcheck{opacity:1;transform:translateY(-50%) scale(1)}.quizcheck path{fill:none;stroke:#5b4028;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:32;stroke-dashoffset:32;animation:drawcheck .34s ease-out forwards}@keyframes drawcheck{to{stroke-dashoffset:0}}
-</style>
+.quiz{margin:0;padding:22px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.55)}.quiz h3{margin:0 0 12px;font-size:18px}.quiz p{margin:0 0 18px;font-size:15px;line-height:1.7}.quizopts{display:grid;gap:12px}.quizopt{position:relative;text-align:left;border:0;background:transparent;border-radius:10px;padding:10px 12px 10px 42px;color:var(--text);cursor:pointer;font-size:15px}.quizopt:hover{background:rgba(255,255,255,.5)}.quiznum{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:22px}.quizcheck{position:absolute;left:4px;top:50%;width:34px;height:34px;transform:translateY(-50%) scale(.7);opacity:0}.quizopt.selected .quizcheck{opacity:1;transform:translateY(-50%) scale(1)}.quizcheck path{fill:none;stroke:#5b4028;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:32;stroke-dashoffset:32;animation:drawcheck .34s ease-out forwards}@keyframes drawcheck{to{stroke-dashoffset:0}}`n</style>
 </head>
 <body>
 <div class="bar"><i id="bar" style="width:33%"></i></div>
@@ -233,12 +231,14 @@ Object.keys(DATA.tips).forEach(function(k){
  REL[k]=(t.rel||[]).filter(function(x){return x!==k;});
 });
 PAGES=DATA.pages.slice();
+PAGES.splice(2,0,{order:2.5,no:'문제 01',unit:'I. 수열의 극한',sec:'확인 문제',title:'등비수열의 극한 확인',kind:'quiz',p1:'',p2:'',eqL:'',eqR:''});
 function eqHTML(p){
  var inner=p.eqL?'<span class="lim"><span class="m">lim</span><small class="v">'+p.eqL+'</small></span><span>'+p.eqR+'</span>':'<span>'+p.eqR+'</span>';
  return '<div class="eqwrap"><div class="eq">'+inner+'</div></div>';
 }
 function renderPageHTML(p){
- var quiz=p.order===2?'<section class="quiz" aria-label="sample quiz"><h3>확인 문제</h3><p>공비의 절댓값이 1보다 작을 때 등비수열의 극한은?</p><div class="quizopts">'+['0','1','∞','r','존재하지 않음'].map(function(v,i){return '<button class="quizopt" type="button">'+(i+1)+'. '+v+'<svg class="quizcheck" viewBox="0 0 32 32"><path d="M5 17 L13 25 L28 7"></path></svg></button>';}).join('')+'</div></section>':'';
+ if(p.kind==='quiz'){var nums=['①','②','③','④','⑤'],vals=['0','1','∞','r','존재하지 않음'];return '<div class="zoomwrap"><div class="pad"><div class="kicker">'+p.no+'</div><div class="title">'+p.title+'</div><section class="quiz" aria-label="객관식 문제"><h3>확인 문제</h3><p>공비의 절댓값이 1보다 작을 때 등비수열의 극한은?</p><div class="quizopts">'+vals.map(function(v,i){return '<button class="quizopt" type="button"><span class="quiznum">'+nums[i]+'</span><span>'+v+'</span><svg class="quizcheck" viewBox="0 0 32 32"><path d="M5 17 L13 25 L28 7"></path></svg></button>';}).join('')+'</div></section></div></div><div class="zoombadge"></div>';}
+ var quiz='';
  return '<div class="zoomwrap"><div class="pad"><div class="kicker">'+p.no+'</div><div class="title">'+p.title+'</div><p class="body">'+p.p1+'</p>'+eqHTML(p)+'<p class="body">'+p.p2+'</p>'+quiz+'</div></div><div class="zoombadge"></div>';
 }
 var book=document.getElementById('book'),dots=document.getElementById('dots'),stage=document.getElementById('stage'),veil=document.getElementById('veil'),blur=document.getElementById('blur'),bar=document.getElementById('bar'),hint=document.getElementById('hint');
@@ -1072,3 +1072,4 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').cat
 </script>
 </body>
 </html>
+
