@@ -123,6 +123,15 @@ def parse_concept(path):
     meta, body = front(open(path, encoding='utf-8').read(), f)
     for k in ('no','title','unit','sec'):
         if k not in meta: err('%s 가 없습니다' % k, f)
+    if meta.get('kind') == 'quiz':
+        options = []
+        for i in range(1, 6):
+            options.append(meta.get('option%d' % i, ''))
+        return {'order': int(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
+                'sec': meta['sec'], 'title': meta['title'], 'kind': 'quiz',
+                'question': meta.get('question', ''), 'problemEq': meta.get('problemEq', ''),
+                'options': options, 'answer': int(meta.get('answer', 1)),
+                'p1': '', 'p2': '', 'eqL': '', 'eqR': ''}
     m = re.search(r'\$\$(.*?)\$\$', body, re.S)
     if not m: err('$$ 수식 $$ 이 없습니다', f)
     before = body[:m.start()].strip()

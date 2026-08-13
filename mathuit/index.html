@@ -241,7 +241,7 @@ Object.keys(DATA.tips).forEach(function(k){
  REL[k]=(t.rel||[]).filter(function(x){return x!==k;});
 });
 PAGES=DATA.pages.slice();
-PAGES.splice(2,0,{order:2.5,no:'문제 01',unit:'I. 수열의 극한',sec:'확인 문제',title:'등비수열의 극한 확인',kind:'quiz',question:'공비의 절댓값이 1보다 작을 때 등비수열의 극한은?',problemEq:'',options:['0','1','∞','r','존재하지 않음'],answer:1,p1:'',p2:'',eqL:'',eqR:''});
+if(!PAGES.some(function(page){return page.kind==='quiz';})) PAGES.splice(2,0,{order:2.5,no:'문제 01',unit:'I. 수열의 극한',sec:'확인 문제',title:'등비수열의 극한 확인',kind:'quiz',question:'공비의 절댓값이 1보다 작을 때 등비수열의 극한은?',problemEq:'',options:['0','1','∞','r','존재하지 않음'],answer:1,p1:'',p2:'',eqL:'',eqR:''});
 function eqHTML(p){
  var inner=p.eqL?'<span class="lim"><span class="m">lim</span><small class="v">'+p.eqL+'</small></span><span>'+p.eqR+'</span>':'<span>'+p.eqR+'</span>';
  return '<div class="eqwrap"><div class="eq">'+inner+'</div></div>';
