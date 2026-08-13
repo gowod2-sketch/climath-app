@@ -153,8 +153,10 @@ body.pen .inkbar{display:flex;}
 .minitext{min-height:110px;resize:vertical;font-family:"Monaco","Courier New",monospace;font-size:13px;}
 .quiz{margin:0;padding:22px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.55)}.quiz h3{margin:0 0 12px;font-size:18px}.quiz p{margin:0 0 18px;font-size:15px;line-height:1.7}.quizopts{display:grid;gap:12px}.quizopt{position:relative;text-align:left;border:0;background:transparent;border-radius:10px;padding:10px 12px 10px 42px;color:var(--text);cursor:pointer;font-size:15px}.quizopt:hover{background:rgba(255,255,255,.5)}.quiznum{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:22px}.quizcheck{position:absolute;left:4px;top:50%;width:34px;height:34px;transform:translateY(-50%) scale(.7);opacity:0}.quizopt.selected .quizcheck{opacity:1;transform:translateY(-50%) scale(1)}.quizcheck path{fill:none;stroke:#4d3828;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:28;stroke-dashoffset:28;animation:drawcheck .34s ease-out forwards}.quizcheck .rough{stroke:#98704b;stroke-width:1.1;stroke-dasharray:25;animation-delay:.04s;opacity:.7}@keyframes drawcheck{to{stroke-dashoffset:0}}</style>
 <style>.quizopt.selected .quizcheck path{animation-duration:1s!important;animation-timing-function:cubic-bezier(.2,.65,.35,1)!important;stroke-dasharray:42!important;stroke-dashoffset:42!important}.quizopt.selected .quizcheck .rough{animation-delay:.08s!important;opacity:.65}.quizopt.selected .quizcheck .grain{animation-delay:.16s!important;opacity:.45}</style>
+<style>.update-pop{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:90;width:min(420px,calc(100% - 28px));padding:15px 16px;border-radius:16px;background:#20263b;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.28);display:none;align-items:center;gap:12px;font-size:13px}.update-pop.on{display:flex}.update-pop span{flex:1}.update-pop button{border:0;border-radius:9px;padding:8px 11px;background:#7c83ff;color:#fff;font-weight:700;cursor:pointer}</style>
 </head>
 <body>
+<div class="update-pop" id="updatePop"><span>새 버전이 배포되었습니다.<br>지금 업데이트할까요?</span><button id="updateNow">업데이트</button><button id="updateLater" style="background:#4a516d">나중에</button></div>
 <div class="bar"><i id="bar" style="width:33%"></i></div>
 <div class="top"><button class="round" id="tocBtn" aria-label="목차" style="border:none;cursor:pointer;font-size:15px;">&#9776;</button><span class="pill" id="pill">I. 수열의 극한</span><span class="sub" id="sec">01 수열의 극한</span><button class="penbtn" id="penBtn" aria-label="필기" title="터치 필기">&#9998;</button><button class="editbtn" id="editBtn" aria-label="편집" title="현재 개념 편집">✎</button><button class="tipbtn on" id="tipBtn" aria-label="팁 표시 켜기/끄기" title="팁 강조 켜기/끄기">💡</button><button class="install" id="installBtn">&#8681; 앱 설치</button></div>
 <div class="stage" id="stage">
@@ -1069,6 +1071,16 @@ guide.addEventListener('pointerdown',function(e){e.stopPropagation();});
  if(last>0){ idx=last; prog=last; apply(); countExposure(idx); markTOC(); }
 })();
 if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(function(){});}
+// 배포 버전이 바뀌면 캐시 초기화·새로고침을 선택할 수 있게 한다.
+(function(){
+ var APP_VERSION='2a1a424', key='mathuit-app-version', pop=document.getElementById('updatePop');
+ var old=localStorage.getItem(key);
+ if(old && old!==APP_VERSION && pop){pop.classList.add('on');}
+ localStorage.setItem(key,APP_VERSION);
+ var now=document.getElementById('updateNow'), later=document.getElementById('updateLater');
+ if(now) now.addEventListener('click',async function(){try{if('caches' in window){var ks=await caches.keys();await Promise.all(ks.map(function(k){return caches.delete(k);}));}if(navigator.serviceWorker){var regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(function(r){return r.update();}));}}catch(e){} location.reload();});
+ if(later) later.addEventListener('click',function(){pop.classList.remove('on');});
+})();
 })();
 </script>
 </body>
