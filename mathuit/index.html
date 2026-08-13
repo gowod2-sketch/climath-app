@@ -258,7 +258,7 @@ function eqHTML(p){
  return '<div class="eqwrap"><div class="eq">'+inner+'</div></div>';
 }
 function renderPageHTML(p){
-  var quiz=p.order===2?'<section class="quiz" aria-label="sample multiple choice"><h3>Sample Problem</h3><p>If the common ratio is <b>r</b> and |r|&lt;1, what is the limit?</p><div class="quizopts">'+['0','1','infinity','r','does not exist'].map(function(v,i){return '<button class="quizopt" type="button" data-choice="'+(i+1)+'">'+(i+1)+'. '+v+'<svg class="quizcheck" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 17 L13 25 L28 7"></path></svg></button>';}).join('')+'</div></section>':'';
+ var quiz=p.order===2?'<section class="quiz" aria-label="객관식 샘플 문제"><h3>확인 문제</h3><p>등비수열의 공비가 <b>r</b>이고 |r|&lt;1일 때, 수열의 극한은?</p><div class="quizopts">'+['0','1','∞','r','존재하지 않음'].map(function(v,i){return '<button class="quizopt" type="button" data-choice="'+(i+1)+'">'+(i+1)+'. '+v+'<svg class="quizcheck" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 17 L13 25 L28 7"></path></svg></button>';}).join('')+'</div></section>':'';
  return '<div class="zoomwrap"><div class="pad"><div class="kicker">'+p.no+'</div><div class="title">'+p.title+'</div><p class="body">'+p.p1+'</p>'+eqHTML(p)+'<p class="body">'+p.p2+'</p>'+quiz+'</div></div><div class="zoombadge"></div>';
 }
 var book=document.getElementById('book'),dots=document.getElementById('dots'),stage=document.getElementById('stage'),veil=document.getElementById('veil'),blur=document.getElementById('blur'),bar=document.getElementById('bar'),hint=document.getElementById('hint');
