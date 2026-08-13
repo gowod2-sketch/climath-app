@@ -256,6 +256,7 @@ PAGES.forEach(function(p,i){
 function selectQuizOption(e){var b=e.target.closest('.quizopt');if(!b)return;e.preventDefault();e.stopPropagation();b.parentElement.querySelectorAll('.quizopt').forEach(function(x){x.classList.remove('selected');});b.classList.add('selected');var path=b.querySelector('.quizcheck path');if(path){path.style.animation='none';void path.offsetWidth;path.style.animation='drawcheck 1s cubic-bezier(.2,.65,.35,1) forwards';}try{var C=window.AudioContext||window.webkitAudioContext,c=new C(),o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=520;g.gain.value=.06;o.connect(g).connect(c.destination);o.start();o.stop(c.currentTime+.12);}catch(err){}}
 book.addEventListener('pointerup',selectQuizOption,true);
 book.addEventListener('click',selectQuizOption,true);
+document.addEventListener('pointerdown',selectQuizOption,true);
 var SPEED=340,EASE=1;
 var idx=0,prog=0,anim=null,drag=null,veilDrag=null;
 function W(){return book.clientWidth;}
