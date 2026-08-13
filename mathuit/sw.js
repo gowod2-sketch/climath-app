@@ -1,4 +1,5 @@
-const CACHE_NAME = 'mathtip-runtime-v16';
+const BUILD_VERSION = '__BUILD_VERSION__';
+const CACHE_NAME = 'mathtip-runtime-' + BUILD_VERSION;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());

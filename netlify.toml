@@ -15,7 +15,7 @@
   # 깨진 앱이 라이브로 나가는 것을 막는 안전장치입니다.
   # editor.html이 GitHub API로 직접 commit한 경우에도 이 빌드가 똑같이 돌기 때문에
   # 편집기에서 잘못된 문법을 저장해도 실제 배포 전에 걸러집니다.
-  command = "python3 build.py && mkdir -p dist && cp index.html editor.html sw.js manifest.webmanifest icon.png _headers dist/"
+  command = "python3 build.py && mkdir -p dist && cp index.html editor.html manifest.webmanifest icon.png _headers dist/ && sed \"s/__BUILD_VERSION__/${COMMIT_REF:-local}/g\" sw.js > dist/sw.js"
 
   # base 기준 상대경로이므로 실제로는 mathuit/dist 입니다.
   publish = "dist"
