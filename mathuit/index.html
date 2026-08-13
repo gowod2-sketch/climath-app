@@ -152,6 +152,9 @@ body.pen .inkbar{display:flex;}
 .minirow textarea,.minirow input{width:100%;}
 .minitext{min-height:110px;max-height:240px;resize:vertical;overflow:auto;font-family:"Monaco","Courier New",monospace;font-size:13px;line-height:1.55;}
 .minihelp{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4;}
+.eqtools{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
+.eqtools button{border:1px solid var(--line);background:var(--s1);color:var(--text2);border-radius:7px;padding:4px 8px;font-size:12px;cursor:pointer;}
+.eqtools button:active{transform:translateY(1px);}
 </style>
 </head>
 <body>
@@ -184,8 +187,8 @@ body.pen .inkbar{display:flex;}
       <div class="minirow"><label>제목</label><input type="text" id="miniTitle"></div>
       <div class="minirow"><label>단원</label><input type="text" id="miniUnit"></div>
       <div class="minirow"><label>소단원</label><input type="text" id="miniSec"></div>
-      <div class="minirow"><label>왼쪽 식</label><input type="text" id="miniEqL" placeholder="예: n\\to\\infty"><div class="minihelp">LaTeX 입력: \\to, \\infty, ^{n}, _{n}</div></div>
-      <div class="minirow"><label>오른쪽 식</label><input type="text" id="miniEqR" placeholder="예: a_n = L"><div class="minihelp">HTML을 직접 입력하지 말고 수식만 입력하세요.</div></div>
+      <div class="minirow"><label>왼쪽 식</label><input type="text" id="miniEqL" placeholder="예: n → ∞"><div class="eqtools" data-target="miniEqL"><button type="button" data-insert="\\frac{□}{□}">분수</button><button type="button" data-insert="^{□}">위첨자</button><button type="button" data-insert="_{□}">아래첨자</button><button type="button" data-insert="\\sqrt{□}">√</button><button type="button" data-insert="\\to">→</button><button type="button" data-insert="\\infty">∞</button></div></div>
+      <div class="minirow"><label>오른쪽 식</label><input type="text" id="miniEqR" placeholder="예: aₙ = L"><div class="eqtools" data-target="miniEqR"><button type="button" data-insert="\\frac{□}{□}">분수</button><button type="button" data-insert="^{□}">위첨자</button><button type="button" data-insert="_{□}">아래첨자</button><button type="button" data-insert="\\sqrt{□}">√</button><button type="button" data-insert="\\lim_{□}">lim</button><button type="button" data-insert="\\infty">∞</button></div></div>
       <div class="minirow"><label>본문 1</label><textarea class="minitext" id="miniP1" placeholder="개념 설명을 입력하세요."></textarea></div>
       <div class="minirow"><label>본문 2</label><textarea class="minitext" id="miniP2" placeholder="보충 설명을 입력하세요."></textarea></div>
     </div>
@@ -632,6 +635,17 @@ var miniFields={
  p1:document.getElementById('miniP1'),
  p2:document.getElementById('miniP2')
 };
+document.querySelectorAll('.eqtools').forEach(function(tool){
+ tool.addEventListener('click',function(e){
+  var b=e.target.closest('button'); if(!b) return;
+  var input=document.getElementById(tool.dataset.target); if(!input) return;
+  var value=b.dataset.insert||'', start=input.selectionStart||input.value.length, end=input.selectionEnd||start;
+  input.value=input.value.slice(0,start)+value+input.value.slice(end);
+  var marker=value.indexOf('□');
+  input.focus();
+  if(marker>=0){var pos=start+marker;input.setSelectionRange(pos,pos+1);}else{var pos=start+value.length;input.setSelectionRange(pos,pos);}
+ });
+});
 function currentPage(){ return PAGES[idx]; }
 function openMiniEditor(){
  var p=currentPage(); if(!p) return;
