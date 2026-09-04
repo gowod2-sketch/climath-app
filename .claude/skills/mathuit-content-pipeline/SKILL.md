@@ -15,7 +15,7 @@ description: "이 저장소에서 docs/ 수학 명세를 mathuit/content/ 앱 �
 
 | 에이전트 | subagent_type | 역할 | 스킬 | 출력 |
 |---------|--------------|------|------|------|
-| spec-analyst | general-purpose | 명세 분해 · 팁 인벤토리 | content-format | `_workspace/01_spec-analyst_inventory.md` |
+| spec-analyst | general-purpose | 명세 분해 · 팁 4단계 판정 | content-format, tip-graph | `_workspace/01_spec-analyst_inventory.md` |
 | concept-author | general-purpose | 개념 본문 작성 | content-format | `content/concept/*.md` |
 | tip-author | general-purpose | 팁 + 그래프 설계 | tip-graph, content-format | `content/tip/*.md` |
 | math-reviewer | general-purpose | 수학적 정확성 | — | `_workspace/03_math-reviewer_review.md` |
@@ -41,6 +41,18 @@ description: "이 저장소에서 docs/ 수학 명세를 mathuit/content/ 앱 �
 `spec-analyst` 1개 호출. 개념 목록과 팁 재사용/신규 판정표를 받는다.
 
 **게이트:** 인벤토리의 "에스컬레이션" 항목이 비어 있지 않으면 여기서 멈추고 사용자에게 확인받는다. 팁 id를 잘못 재사용하면 개념 본문의 뜻이 바뀌는데, 이건 build.py가 잡아주지 못한다.
+
+에스컬레이션은 유형에 따라 차단 범위가 다르다. 전부 멈출 필요는 없다:
+
+| 유형 | 차단 범위 | 예 |
+|------|----------|-----|
+| **기존 팁 확장** | 그 팁을 쓰는 개념만 | `base` oneline 확장 미정 → 해당 개념만 보류, 나머지 진행 |
+| **unit/sec 신설** | 해당 sec의 개념 전부 | 새 절 승인 전에는 그 절의 개념을 만들 수 없다 |
+| **표현불가 (핵심)** | 없음 — 진행하되 반드시 보고 | 평문 처리로 진행 가능. 단 형식 확장 결정이 나면 재작업 |
+| **교육과정 경계** | 없음 — 제외한 채 진행 | 포함 결정 시 order 재배치 필요함을 명시 |
+| **범위 결정 (퀴즈 등)** | 없음 | 기본은 제외 |
+
+차단되지 않는 개념은 Phase 3을 진행한다. 전부 멈추면 사람 한 명의 응답을 기다리느라 파이프라인 전체가 서고, 승인이 필요 없는 작업까지 지연된다.
 
 ### Phase 3: 병렬 작성
 단일 메시지에서 2개 Agent 동시 호출 (`run_in_background: true`):
