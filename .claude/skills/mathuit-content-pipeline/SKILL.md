@@ -1,0 +1,109 @@
+---
+name: mathuit-content-pipeline
+description: "이 저장소에서 docs/ 수학 명세를 mathuit/content/ 앱 콘텐츠(개념·팁개념)로 변환하는 파이프라인 오케스트레이터. 명세 분해, 개념·팁 작성, 수학 검증, build.py 통과까지 전 과정을 조율한다. '단원을 앱에 넣어줘', 'docs/03 변환', '개념 추가' 및 후속 요청('다시 실행', '재실행', '수정', '보완', '팁만 다시', '이전 결과 기반으로')에 사용한다. 이 저장소의 mathuit 콘텐츠 변환 작업에만 사용하고, 일반적인 수학 질문이나 앱 코드 수정에는 사용하지 않는다."
+---
+
+# mathuit 콘텐츠 파이프라인
+
+`docs/*.md` 수학 명세 → `mathuit/content/{concept,tip}/*.md` 앱 콘텐츠 변환을 조율한다.
+
+## 실행 모드: 서브 에이전트
+
+이 저장소 환경에는 에이전트 팀 도구가 없다. `Agent` 도구로 직접 호출하고 반환값과 `_workspace/` 파일로 결과를 수집한다.
+
+## 에이전트 구성
+
+| 에이전트 | subagent_type | 역할 | 스킬 | 출력 |
+|---------|--------------|------|------|------|
+| spec-analyst | general-purpose | 명세 분해 · 팁 인벤토리 | content-format | `_workspace/01_spec-analyst_inventory.md` |
+| concept-author | general-purpose | 개념 본문 작성 | content-format | `content/concept/*.md` |
+| tip-author | general-purpose | 팁 + 그래프 설계 | tip-graph, content-format | `content/tip/*.md` |
+| math-reviewer | general-purpose | 수학적 정확성 | — | `_workspace/03_math-reviewer_review.md` |
+| build-gate | general-purpose | build.py + 링크 정합성 | build-gate | `_workspace/03_build-gate_result.md` |
+
+모든 Agent 호출에 `model: "opus"`를 명시한다.
+
+## 워크플로우
+
+### Phase 0: 컨텍스트 확인
+- `_workspace/` 없음 → **초기 실행** (Phase 1부터)
+- `_workspace/` 있음 + 부분 수정 요청 → **부분 재실행** (해당 에이전트만 재호출, 인벤토리 재사용)
+- `_workspace/` 있음 + 새 명세 입력 → **새 실행** (기존을 `_workspace_prev/`로 옮기고 Phase 1부터)
+
+`_workspace/`는 `.gitignore`에 등록되어 있어 커밋되지 않는다.
+
+### Phase 1: 준비
+1. 대상 `docs/*.md` 확정
+2. 기존 자산 수집 — `content/tip/` id 목록, `content/concept/` order 최댓값, unit·sec 명명 관례
+3. `_workspace/` 생성
+
+### Phase 2: 명세 분해 (순차 — 이후 전 단계의 입력)
+`spec-analyst` 1개 호출. 개념 목록과 팁 재사용/신규 판정표를 받는다.
+
+**게이트:** 인벤토리의 "에스컬레이션" 항목이 비어 있지 않으면 여기서 멈추고 사용자에게 확인받는다. 팁 id를 잘못 재사용하면 개념 본문의 뜻이 바뀌는데, 이건 build.py가 잡아주지 못한다.
+
+### Phase 3: 병렬 작성
+단일 메시지에서 2개 Agent 동시 호출 (`run_in_background: true`):
+
+| 에이전트 | 입력 | 출력 |
+|---------|------|------|
+| concept-author | 인벤토리 개념 행 + 원본 절 | `content/concept/*.md` |
+| tip-author | 인벤토리 "신규" 팁 + 원본 정의 | `content/tip/*.md` |
+
+둘은 서로를 보지 않는다. **공유 계약은 인벤토리의 팁 id 목록뿐**이므로 Phase 2의 정확성이 여기서 회수된다.
+
+### Phase 4: 병렬 검증
+단일 메시지에서 2개 Agent 동시 호출:
+
+| 에이전트 | 보는 것 | 보지 않는 것 |
+|---------|--------|------------|
+| math-reviewer | 공식·조건·curve 방향의 정확성 | 표기 규칙, 빌드 |
+| build-gate | 문법·링크 정합성 (스크립트 실행) | 수학 내용 |
+
+두 축을 분리한 이유: 빌드가 통과해도 수학이 틀릴 수 있고, 수학이 맞아도 빌드가 막힐 수 있다. 한 에이전트에 둘 다 맡기면 쉬운 쪽만 보고 통과시킨다.
+
+### Phase 5: 수정 루프
+검증 실패 항목을 담당 에이전트에게 되돌린다.
+- build-gate 실패 → 해당 저자 재호출 → **build-gate 재실행** (첫 에러에서 멈추므로 뒤에 더 있을 수 있다)
+- math-reviewer "수정필요" → 해당 저자 재호출
+- math-reviewer "판단보류" → 사용자에게 올린다
+
+둘 다 통과할 때까지 반복한다.
+
+### Phase 6: 정리
+1. `git status`로 `index.html` 변경 여부 확인 (build.py가 데이터 블록을 갈아끼운다)
+2. `_workspace/` 보존
+3. 생성/수정 파일 목록과 미해결 에스컬레이션 요약 보고
+
+## 데이터 흐름
+
+```
+docs/*.md
+   └→ spec-analyst ──→ _workspace/01_inventory.md
+                          ├→ concept-author ─→ content/concept/*.md ─┐
+                          └→ tip-author ─────→ content/tip/*.md ─────┤
+                                                                      ├→ math-reviewer → 03_review.md
+                                                                      └→ build-gate ───→ 03_result.md
+                                                                              └→ 실패 시 저자에게 반송
+```
+
+## 에러 핸들링
+- 에이전트 1개 실패: 1회 재시도. 재실패 시 누락을 명시하고 진행
+- 인벤토리 생성 실패: 파이프라인 중단 (이후 전 단계가 여기 의존)
+- tip-author가 "산점도 표현 불가" 보고: **파일을 만들지 말고 사용자에게 올린다.** 틀린 그래프는 없는 그래프보다 나쁘다
+- build-gate 3회 연속 실패: 자동 수정을 멈추고 에러 원문과 함께 사용자에게 올린다
+
+## 테스트 시나리오
+
+**정상 흐름** — "docs/03을 앱에 넣어줘"
+1. spec-analyst가 개념 6~8건, 팁 신규 2~3건 판정
+2. concept-author·tip-author 병렬 작성
+3. build-gate 통과, math-reviewer 통과
+4. 생성 파일 목록 보고
+
+**에러 흐름** — 산점도 표현 불가 용어
+1. tip-author가 `derivative`(미분계수)를 받음
+2. n=1..12 수열 산점도로 순간변화율을 표현할 수 없다고 판단
+3. 파일을 만들지 않고 에스컬레이션
+4. 오케스트레이터가 사용자에게 선택지 제시 — 그래프 형식 확장 / 개념 본문에 평문 설명 / 해당 팁 생략
+5. 사용자 결정 후 재개. concept-author가 쓴 `[[derivative|...]]` 링크는 팁이 없으면 빌드가 막히므로 함께 정리한다

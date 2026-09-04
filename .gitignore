@@ -23,3 +23,7 @@ node_modules/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# 에이전트 중간 산출물 - 검증용으로 남기되 커밋하지 않습니다
+_workspace/
+_workspace_prev/
