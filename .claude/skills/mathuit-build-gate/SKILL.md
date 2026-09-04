@@ -54,6 +54,14 @@ comm -23 /tmp/used.txt /tmp/exist.txt   # 링크했는데 파일 없음 → 빌�
 comm -13 /tmp/used.txt /tmp/exist.txt   # 파일은 있는데 아무도 안 씀 → 고아 팁
 ```
 
+팁의 `related:` id도 빌드가 검사하므로 함께 본다. 그리고 **빌드 통과 후 산출물에 `[[`가 남았는지 반드시 확인하라** — 남아 있으면 링크가 생성조차 안 된 죽은 링크이고, 빌드는 exit 0을 낸다:
+
+```bash
+python3 -c "
+import json; d=json.load(open('mathuit/content-data.json'))
+print([(p['no'],f) for p in d['pages'] for f in ('p1','p2') if '[[' in p.get(f,'')] or '죽은 링크 없음')"
+```
+
 ## 빌드가 강제하지 않는 규약도 대조하라
 
 `build.py`를 통과했다고 규약을 지킨 것은 아니다. 아래는 빌드가 보지 않지만 어긋나면 실제로 잘못된 앱이 나가는 항목이다.

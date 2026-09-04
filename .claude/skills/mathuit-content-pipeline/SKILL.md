@@ -15,13 +15,13 @@ description: "이 저장소에서 docs/ 수학 명세를 mathuit/content/ 앱 �
 
 | 에이전트 | subagent_type | 역할 | 스킬 | 출력 |
 |---------|--------------|------|------|------|
-| spec-analyst | general-purpose | 명세 분해 · 팁 4단계 판정 | content-format, tip-graph | `_workspace/01_spec-analyst_inventory.md` |
-| concept-author | general-purpose | 개념 본문 작성 | content-format | `content/concept/*.md` |
-| tip-author | general-purpose | 팁 + 그래프 설계 | tip-graph, content-format | `content/tip/*.md` |
-| math-reviewer | general-purpose | 수학적 정확성 | — | `_workspace/03_math-reviewer_review.md` |
-| build-gate | general-purpose | build.py + 링크 정합성 | build-gate | `_workspace/03_build-gate_result.md` |
+| spec-analyst | `spec-analyst` | 명세 분해 · 팁 4단계 판정 | content-format, tip-graph | `_workspace/01_spec-analyst_inventory.md` |
+| concept-author | `concept-author` | 개념 본문 작성 | content-format | `content/concept/*.md` |
+| tip-author | `tip-author` | 팁 + 그래프 설계 | tip-graph, content-format | `content/tip/*.md` |
+| math-reviewer | `math-reviewer` | 수학적 정확성 | — | `_workspace/03_math-reviewer_review.md` |
+| build-gate | `build-gate` | build.py + 링크 정합성 | build-gate | `_workspace/03_build-gate_result.md` |
 
-모든 Agent 호출에 `model: "opus"`를 명시한다.
+모든 Agent 호출에 `model: "opus"`를 명시한다. `subagent_type`에는 위 이름을 그대로 쓴다 — `.claude/agents/*.md` 정의가 등록되어 있어 역할·원칙·재호출 지침이 함께 로드된다. `general-purpose`로 부르면 그 정의가 로드되지 않아 프롬프트에 역할을 전부 다시 써야 한다.
 
 ## 워크플로우
 
