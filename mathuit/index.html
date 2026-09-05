@@ -706,7 +706,8 @@ function saveLast(){try{localStorage.setItem(LAST_KEY,pid(idx));}catch(e){}}
 function loadLast(){
  try{
   var v=localStorage.getItem(LAST_KEY); if(v===null) return 0;
-  if(/^\d+$/.test(v)){ var n=parseInt(v,10); return (n<0||n>PAGES.length-1)?0:n; }
+  // 옛 값은 숫자(인덱스)다. 필기와 같은 이유로 "그때의 순서"로 풀어야 한다.
+  if(/^\d+$/.test(v)){ v=INK_LEGACY_ORDER[parseInt(v,10)]||''; }
   for(var i=0;i<PAGES.length;i++) if(pid(i)===v) return i;
   return 0;
  }catch(e){ return 0; }
@@ -752,12 +753,21 @@ var INK_KEY='mathtip_ink_v1';
 // 아래 마이그레이션은 "순서를 바꾸지 않은" 이번 릴리스에서만 올바르게 동작하므로,
 // 콘텐츠 재배치는 반드시 이 릴리스가 나간 다음에 해야 한다.
 function pid(i){ var p=PAGES[i]; return (p&&p.id)?p.id:('idx'+i); }
+// 인덱스로 저장된 옛 필기를 해석하려면 "그때 배포돼 있던 순서"가 필요하다.
+// 현재 순서로 해석하면, 콘텐츠를 재배치하는 순간 매핑이 통째로 어긋난다.
+// 그래서 배포본(main, 개념 44개 + index 2 의 하드코딩 퀴즈 = 45칸)의 순서를
+// 여기에 고정해 둔다. 이 목록은 과거를 가리키므로 앞으로도 바꾸지 않는다 —
+// 콘텐츠를 어떻게 재배치하든 옛 필기는 항상 같은 개념으로 간다.
+var INK_LEGACY_ORDER=["c01","c02","","c03","c04","c05","c06","c07","c08","c09","c10","c11","c12","c13","c14","c15","c16","c17","c18","c19","c20","c21","c22","c23","c24","c25","c26","c27","c28","c29","c30","c31","c32","c33","c34","c35","c36","c37","c38","c39","c40","c41","c42","c43","c44"];
 var INK=(function(){
  var raw={}; try{ raw=JSON.parse(localStorage.getItem(INK_KEY))||{}; }catch(e){ raw={}; }
  var moved=false, out={};
  Object.keys(raw).forEach(function(k){
-  if(/^\d+$/.test(k)){ out[pid(+k)]=raw[k]; moved=true; }   // 옛 인덱스 키 → id 키
-  else out[k]=raw[k];
+  if(/^\d+$/.test(k)){
+   var id=INK_LEGACY_ORDER[+k];
+   // 목록 밖(그 시점에 없던 화면)이면 옮길 곳을 모른다. 버리지 말고 그대로 둔다.
+   if(id){ out[id]=raw[k]; moved=true; } else { out[k]=raw[k]; }
+  } else out[k]=raw[k];
  });
  if(moved){ try{ localStorage.setItem(INK_KEY,JSON.stringify(out)); }catch(e){} }
  return out;
