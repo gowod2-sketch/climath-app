@@ -13,6 +13,19 @@ description: "이 저장소에서 docs/ 수학 명세를 mathuit/content/ 앱 �
 
 **`_workspace/`의 정확한 위치는 `mathuit/_workspace/`다 (저장소 루트의 `_workspace/`가 아니다).** 이 문서 전체의 `_workspace/`는 전부 이 경로의 축약이다. 저장소 루트에도 같은 이름의 `_workspace/`가 있을 수 있는데, 이건 예전 회차가 cwd를 `mathuit/`가 아닌 저장소 루트로 잡고 실행한 흔적이다 — 둘 다 `.gitignore`에 걸려 커밋되지 않으므로 남아 있어도 무해하지만, 새 에이전트를 호출할 때는 반드시 절대경로(`/home/user/climath-app/mathuit/_workspace/...` 또는 그에 준하는 명시적 경로)로 지시해 두 위치가 또 갈라지지 않게 하라.
 
+## 하네스 규칙이 바뀌면 여기를 전부 같이 고쳐라
+
+이 파이프라인은 하나의 규칙(예: "`## graph`가 필수다")이 **여러 파일에 중복 서술**돼 있다. 규칙을 바꿀 때 코드만 고치고 아래 목록 중 일부를 빠뜨리면, 오케스트레이터가 매번 디스패치 프롬프트에서 수동으로 최신 규칙을 다시 설명해야 하는 상태로 돌아간다(2026-09-05, `## graph` 선택화 때 실제로 이렇게 됐다 — 코드는 그날 고쳤는데 `spec-analyst.md`·`tip-author.md` 두 에이전트 정의는 세 라운드가 지나도록 낡은 채로 남아 있었다). 규칙을 바꾸면 **전부** 확인하라:
+
+- `mathuit/build.py`, `mathuit/index.html` (실제 동작)
+- `.claude/skills/mathuit-content-format/SKILL.md`, `.claude/skills/mathuit-tip-graph/SKILL.md`, `.claude/skills/mathuit-build-gate/SKILL.md` (표기 규칙)
+- **`.claude/agents/spec-analyst.md`, `.claude/agents/concept-author.md`, `.claude/agents/tip-author.md`, `.claude/agents/math-reviewer.md`, `.claude/agents/build-gate.md` — 에이전트 자체의 영구 지침.** 스킬만 고치고 이걸 빠뜨리기 쉽다. 에이전트는 스킬을 참조하지만, 에이전트 정의 본문에 규칙을 **직접 서술**해 둔 곳(예: tip-author.md의 "팁 하나는 산점도 필수" 같은 도입부 문장)은 스킬을 갱신해도 안 바뀐다.
+- `CLAUDE.md`의 "알려진 제약" 절
+
+## `_workspace/` 파일명 — "최신"을 헷갈리지 않게
+
+한 단원 작업이 끝나면 다음 단원 착수 전에 `01_spec-analyst_inventory.md`를 **그 단원 이름을 붙여 보존**하라(예: `01_spec-analyst_inventory_docs04.md`). 그냥 두면 다음 라운드의 spec-analyst가 이전 인벤토리를 못 찾거나, `ship.py` 같은 도구가 파일명 정렬로 "최신"을 잘못 고른다(실제로 이 정렬 방식이 옛 백업을 최신으로 오인해 배포를 막은 적이 두 번 있다 — `ship.py`는 지금 수정 시각(mtime) 기준으로 고치긴 했지만, 새 라운드를 시작할 때 이전 파일을 남겨두는 습관 자체는 여전히 필요하다). 현재 라운드가 쓰는 인벤토리 파일명은 항상 접미사 없는 `01_spec-analyst_inventory.md`로 유지한다.
+
 ## 에이전트 구성
 
 | 에이전트 | subagent_type | 역할 | 스킬 | 출력 |
