@@ -47,12 +47,18 @@ def gate():
         planned = sorted(set(re.findall(r'c\d+\.md', m.group(1)))) if m else []
         made = set(os.path.basename(p) for p in glob.glob(os.path.join(ROOT, 'content/concept/c*.md')))
         missing = [f for f in planned if f not in made]
-        if missing:
-            blocks.append(('계획된 개념 미생성 — 단원을 반쯤 출고하면 근거가 끊긴다',
-                           '  누락: %s\n  인벤토리: %s' % (' '.join(missing), os.path.basename(inv[-1]))))
+        present = [f for f in planned if f in made]
+        # 막아야 하는 것은 **부분 출고**다. 계획의 일부만 있으면 근거 사슬이 끊긴다.
+        # 하나도 없으면 이 브랜치가 그 단원을 손대지 않은 것이므로 막을 이유가 없다.
+        # (_workspace/ 는 gitignore 대상이라 브랜치를 바꿔도 남는다 — 브랜치 상태가
+        #  아니라 작업 디렉토리 상태이므로, 실제 파일 존재로 판정해야 한다.)
+        if missing and present:
+            blocks.append(('단원을 반쯤 출고하려 한다 — 근거 사슬이 끊긴다',
+                           '  있음: %s\n  없음: %s\n  인벤토리: %s' % (
+                               ' '.join(present), ' '.join(missing), os.path.basename(inv[-1]))))
 
-    # 4) 미해결 에스컬레이션
-    if inv:
+    # 4) 미해결 에스컬레이션 — 그 단원을 실제로 출고하려 할 때만 본다
+    if inv and 'present' in dir() and present:
         txt = open(inv[-1], encoding='utf-8').read()
         m = re.search(r'^## 에스컬레이션(.*)', txt, re.S | re.M)
         if m and m.group(1).strip() and '없음' not in m.group(1)[:40]:
