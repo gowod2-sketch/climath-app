@@ -1,7 +1,7 @@
 ---
 title: 조립제법
 icon: ↓
-oneline: 다항식을 일차식으로 나눌 때 계수만으로 몫과 나머지를 빠르게 구하는 방법
+oneline: 다항식을 x - a 꼴의 일차식으로 나눌 때 계수만으로 몫과 나머지를 빠르게 구하는 방법
 related: [polydiv, remtheorem, factheorem]
 ---
 
