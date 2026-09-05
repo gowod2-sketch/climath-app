@@ -40,19 +40,39 @@ def gate():
 
     # 2) 화면 — 데이터가 맞아도 그려진 결과는 다를 수 있다.
     #    shoot.py 가 각 화면을 검사해 파손을 ⚠ 로 표시한다.
+    #
+    #    "화면이 깨졌다"와 "화면을 확인할 수 없다"는 다른 사건이다. 앞은 언제나
+    #    막아야 하지만, 뒤는 환경 문제일 수 있다(윈도우에서 헤드리스 크롬이
+    #    응답하지 않는 사례가 실제로 있었다). 뒤까지 무조건 막으면 그 머신에서는
+    #    게이트가 영구 적색이 되고, 결국 게이트 자체를 우회하게 된다 — 그게 더 나쁘다.
+    #    그래서 캡처 불가에 한해 "사람이 직접 봤다"는 진술로 통과시키되,
+    #    무엇을 어떻게 봤는지 문구를 반드시 남기게 한다(--screens-verified="...").
+    verified = next((a.split('=', 1)[1] for a in sys.argv
+                     if a.startswith('--screens-verified=') and len(a.split('=', 1)[1].strip()) >= 10), None)
     r = subprocess.run([sys.executable, 'tools/shoot.py', '--all'], cwd=ROOT,
                        capture_output=True, text=True, timeout=600)
     bad = [ln.strip() for ln in (r.stdout or '').splitlines() if '⚠' in ln]
     if bad:
+        # 파손은 진술로 넘길 수 없다. 캡처가 됐고 그 결과가 깨졌다는 뜻이다.
         blocks.append(('화면 파손 %d건' % len(bad), '\n'.join('  ' + b for b in bad)))
     elif r.returncode != 0:
-        blocks.append(('화면 확인 실패 — 크롬을 못 찾았거나 캡처가 죽었다',
-                       (r.stdout or r.stderr).strip()[-400:]))
+        if verified:
+            print('  · 화면 캡처 불가 — 수동 확인 진술로 대체: %s' % verified)
+        else:
+            blocks.append(('화면 확인 실패 — 크롬을 못 찾았거나 캡처가 죽었다',
+                           (r.stdout or r.stderr).strip()[-400:] +
+                           '\n  직접 눈으로 확인했다면: --screens-verified="무엇을 어떻게 봤는지" (10자 이상)'))
 
     # 3) 계획 대비 누락 — 단원을 반쯤 출고하면 근거 사슬이 끊긴다.
     #    실제로 c14 가 빠진 채 c15 가 나가서, c15 본문이 근거로 삼는
     #    극한을 설명할 화면이 앱에 하나도 없는 상태가 됐다.
-    inv = sorted(glob.glob(os.path.join(WS, '01_*inventory*.md')))
+    # "최신"은 파일명 정렬이 아니라 수정 시각으로 고른다 — 지난 단원 인벤토리를
+    # `..._docs03.md`/`..._docs04.md`로 보존해 두는 관례를 쓰면, 그 파일명들이
+    # 알파벳상 기본 파일명(`01_spec-analyst_inventory.md`)보다 뒤에 와서
+    # sorted(...)[-1]이 옛 백업을 "최신"으로 잘못 골랐다(실제로 한 번 이걸로
+    # 이미 해소된 에스컬레이션을 다시 미해결로 오판해 배포를 막았다).
+    _cand = glob.glob(os.path.join(WS, '01_*inventory*.md'))
+    inv = [max(_cand, key=os.path.getmtime)] if _cand else []
     if inv:
         txt = open(inv[-1], encoding='utf-8').read()
         m = re.search(r'^## 개념 목록(.*?)^## ', txt, re.S | re.M)

@@ -142,6 +142,9 @@ def parse_tip(path):
                  'lines': lines, 'lab': {'x': lx, 'y': ly, 'a': at, 't': syms(g.get('label',''))},
                  'steps': steps, 'rel': meta.get('related', []), 'nograph': not bool(gm)}
 
+# order 는 정수가 아니라 실수다. 개념은 파일번호와 같은 정수를 쓰지만(c07 → 7),
+# 퀴즈처럼 개념 사이에 끼우는 화면은 5.5 같은 값으로 넣어야 앞뒤 개념의 번호를
+# 전부 밀지 않아도 된다. 파일번호=order 관례를 깨지 않기 위한 선택이다.
 def parse_concept(path):
     f = os.path.basename(path)
     meta, body = front(open(path, encoding='utf-8').read(), f)
@@ -151,7 +154,7 @@ def parse_concept(path):
         options = []
         for i in range(1, 6):
             options.append(meta.get('option%d' % i, ''))
-        return {'order': int(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
+        return {'id': f[:-3], 'order': float(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
                 'sec': meta['sec'], 'title': meta['title'], 'kind': 'quiz',
                 'question': meta.get('question', ''), 'problemEq': meta.get('problemEq', ''),
                 'options': options, 'answer': int(meta.get('answer', 1)),
@@ -167,8 +170,17 @@ def parse_concept(path):
         eqL = syms(lm.group(1)); eqR = mathify(lm.group(2).strip())
     else:
         eqR = mathify(eq)
-    return {'order': int(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
-            'sec': meta['sec'], 'title': meta['title'],
+    # id 는 파일명(c07 등)이다. 화면 순서(order)와 달리 콘텐츠를 재배치해도
+    # 변하지 않으므로, 앱이 사용자 데이터(필기·마지막 위치)를 붙여 두는 키로 쓴다.
+    # 인덱스로 저장하면 단원을 하나 끼워 넣는 순간 남의 개념으로 옮겨 붙는다.
+    # prereq: 이 개념이 기대는 앞 개념들(id 목록). 지금까지 이 의존은 본문 문장에만
+    # 있어서("앞의 합성함수 미분법에서 ...") 기계가 읽지 못했고, 근거 사슬이 끊겨도
+    # 빌드가 통과했다. 앱의 미션이 "새 내용은 이미 배운 것만으로 구성"이므로
+    # 이 관계는 콘텐츠의 일부다 — check.py 가 존재·순서를 검사한다.
+    pre = meta.get('prereq', [])
+    if isinstance(pre, str): pre = [x.strip() for x in pre.split(',') if x.strip()]
+    return {'id': f[:-3], 'order': float(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
+            'sec': meta['sec'], 'title': meta['title'], 'pre': pre,
             'p1': prose(before), 'p2': prose(after), 'eqL': eqL, 'eqR': eqR}
 
 def main():
