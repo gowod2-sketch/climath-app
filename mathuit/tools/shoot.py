@@ -11,7 +11,7 @@ build.py 도 check.py 도 데이터만 본다. 실제로 그려진 화면은 아
 
 산출물: tools/_shots/  (gitignore 대상)
 """
-import http.server, json, os, re, socketserver, subprocess, sys, threading, time
+import http.server, json, os, re, shutil, socketserver, subprocess, sys, tempfile, threading, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHOTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_shots')
@@ -27,12 +27,29 @@ CHROME_CANDIDATES = [
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
 ]
 
+# 윈도우 경로는 사용자마다 다르므로 환경변수로 조립한다. Chrome 은 사용자 단위
+# 설치(LOCALAPPDATA)가 기본이라 Program Files 만 보면 못 찾는다. Edge 는 크로미움
+# 기반이라 헤드리스 캡처에 그대로 쓸 수 있어 마지막 대안으로 둔다.
+def _win_candidates():
+    out = []
+    for var, tail in (
+        ('LOCALAPPDATA', r'Google\Chrome\Application\chrome.exe'),
+        ('PROGRAMFILES', r'Google\Chrome\Application\chrome.exe'),
+        ('PROGRAMFILES(X86)', r'Google\Chrome\Application\chrome.exe'),
+        ('PROGRAMFILES(X86)', r'Microsoft\Edge\Application\msedge.exe'),
+        ('PROGRAMFILES', r'Microsoft\Edge\Application\msedge.exe'),
+    ):
+        base = os.environ.get(var)
+        if base: out.append(os.path.join(base, tail))
+    return out
+
 def find_chrome():
-    for p in CHROME_CANDIDATES:
+    for p in CHROME_CANDIDATES + (_win_candidates() if os.name == 'nt' else []):
         if os.path.exists(p): return p
+    finder = 'where' if os.name == 'nt' else 'which'
     for name in ('chromium', 'google-chrome', 'chrome'):
-        p = subprocess.run(['which', name], capture_output=True, text=True)
-        if p.returncode == 0: return p.stdout.strip()
+        p = subprocess.run([finder, name], capture_output=True, text=True)
+        if p.returncode == 0: return p.stdout.strip().splitlines()[0]
     return None
 
 def pages():
@@ -102,11 +119,18 @@ def main():
     port = srv.server_address[1]
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     time.sleep(0.5)
+    # 전용 프로필을 반드시 준다. 안 주면 헤드리스가 기본 프로필을 쓰려 하는데,
+    # 사용자가 크롬을 열어 둔 상태(특히 윈도우)면 프로필이 잠겨 있어 프로세스가
+    # 그대로 멈추고 타임아웃까지 간다 — 캡처가 죽은 게 아니라 붙잡혀 있는 것이다.
+    profile = tempfile.mkdtemp(prefix='mathuit-shoot-')
     try:
         for i in targets:
             probe = make_probe(i)
             out = os.path.join(SHOTS, 'p%02d.png' % i)
-            r = subprocess.run([chrome, '--headless', '--disable-gpu', '--no-sandbox',
+            r = subprocess.run([chrome, '--headless=new', '--disable-gpu', '--no-sandbox',
+                                '--user-data-dir=' + profile,
+                                '--no-first-run', '--no-default-browser-check',
+                                '--disable-background-networking', '--disable-extensions',
                                 '--hide-scrollbars', '--window-size=%d,%d' % (VIEW_W, VIEW_H),
                                 '--virtual-time-budget=8000', '--dump-dom',
                                 '--screenshot=' + out,
@@ -118,6 +142,11 @@ def main():
             os.remove(probe)
     finally:
         srv.shutdown()
+        shutil.rmtree(profile, ignore_errors=True)
+        # 캡처가 타임아웃으로 죽으면 위 os.remove 를 못 지나 _probe.html 이 남는다.
+        # 저장소에 굴러다니다 실수로 커밋되므로 여기서 반드시 지운다.
+        try: os.remove(os.path.join(ROOT, '_probe.html'))
+        except OSError: pass
     print("\n캡처 위치: %s" % SHOTS)
     print("눈으로 확인할 것: 대괄호 [[ 노출 · &#숫자; 노출 · 긴 단원명에서 헤더 깨짐")
     return 0

@@ -151,7 +151,7 @@ def parse_concept(path):
         options = []
         for i in range(1, 6):
             options.append(meta.get('option%d' % i, ''))
-        return {'order': int(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
+        return {'id': f[:-3], 'order': int(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
                 'sec': meta['sec'], 'title': meta['title'], 'kind': 'quiz',
                 'question': meta.get('question', ''), 'problemEq': meta.get('problemEq', ''),
                 'options': options, 'answer': int(meta.get('answer', 1)),
@@ -167,7 +167,10 @@ def parse_concept(path):
         eqL = syms(lm.group(1)); eqR = mathify(lm.group(2).strip())
     else:
         eqR = mathify(eq)
-    return {'order': int(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
+    # id 는 파일명(c07 등)이다. 화면 순서(order)와 달리 콘텐츠를 재배치해도
+    # 변하지 않으므로, 앱이 사용자 데이터(필기·마지막 위치)를 붙여 두는 키로 쓴다.
+    # 인덱스로 저장하면 단원을 하나 끼워 넣는 순간 남의 개념으로 옮겨 붙는다.
+    return {'id': f[:-3], 'order': int(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
             'sec': meta['sec'], 'title': meta['title'],
             'p1': prose(before), 'p2': prose(after), 'eqL': eqL, 'eqR': eqR}
 

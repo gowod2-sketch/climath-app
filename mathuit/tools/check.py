@@ -64,6 +64,16 @@ def main():
         used |= set(t.get('rel', []))
     orphan = sorted(set(d['tips']) - used)
 
+    # 개념 id 는 앱이 사용자 필기·마지막 위치를 붙여 두는 키다(index.html 의 pid()).
+    # 비었거나 겹치면 서로 다른 개념의 필기가 한 칸에 섞이고, 조용히 일어난다.
+    ids = [p.get('id', '') for p in d['pages'] if p.get('kind') != 'quiz']
+    missing = sum(1 for i in ids if not i)
+    dup = sorted({i for i in ids if i and ids.count(i) > 1})
+    if missing:
+        bad.append('개념 %d개에 id 가 없다 — 필기 저장 키가 인덱스로 되돌아간다' % missing)
+    if dup:
+        bad.append('개념 id 중복: %s — 필기가 서로 섞인다' % ' '.join(dup))
+
     if bad:
         print()
         for b in bad: print('  ' + b)
@@ -71,7 +81,7 @@ def main():
         print('  %d건. docs/harness/APP-BUGS.md 참조.' % len(bad))
         return 1
 
-    print('  죽은 링크 0 · 엔티티 파손 0 · 제목 표기 정상')
+    print('  죽은 링크 0 · 엔티티 파손 0 · 제목 표기 정상 · 개념 id %d개 고유' % len(ids))
     if orphan:
         print('  참고 — 아무도 안 쓰는 팁 %d개: %s' % (len(orphan), ' '.join(orphan)))
     return 0
