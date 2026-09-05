@@ -11,7 +11,10 @@ INDEX = os.path.join(ROOT, 'index.html')
 
 SYM = [('-oo','&minus;&#8734;'), ('->','&#8594;'), ('<=','&#8804;'), ('>=','&#8805;'),
        ('!=','&#8800;'), ('+-','&#177;'), ('...','&#8943;'), ('sum','&#8721;'),
-       ('oo','&#8734;'), ('alpha','&#945;'), ('beta','&#946;')]
+       ('oo','&#8734;'), ('alpha','&#945;'), ('beta','&#946;'), ('theta','&#952;')]
+
+# syms() 가 만든 HTML 엔티티. 이 덩어리는 절대 쪼개면 안 된다.
+ENT = r'&(?:#\d+|[A-Za-z]+);'
 
 ROMAN_WORDS = {'lim','log','sin','cos','tan','ln','max','min'}
 
@@ -29,6 +32,11 @@ def mathify(t):
     t = syms(t)
     out, i = [], 0
     while i < len(t):
+        # syms() 가 만든 엔티티는 통째로 통과시킨다. 문자 단위로 쪼개면
+        # '&' '#' '8' ... 이 각각 span 에 갇혀 엔티티로 해석되지 않는다.
+        m = re.match(ENT, t[i:])
+        if m:
+            out.append('<span class="m">%s</span>' % m.group(0)); i += len(m.group(0)); continue
         m = re.match(r'[A-Za-z]+', t[i:])
         if m:
             w = m.group(0)
@@ -54,16 +62,25 @@ def mathify(t):
 
 def prose(t):
     """본문: [[id|글자]] 링크 + 기호 + 단일 변수 이탤릭."""
+    # 링크 id 를 syms() 전에 자리표시자로 빼둔다.
+    # id 안의 약어(sumval 의 'sum')가 엔티티로 바뀌면 아래 정규식의
+    # [a-z0-9_]+ 에 걸리지 않아 링크가 조용히 사라진다 — 빌드는 통과한다.
+    ids = []
+    def stash(m):
+        ids.append(m.group(1))
+        return '[[\x00%d\x01|%s]]' % (len(ids) - 1, m.group(2))
+    t = re.sub(r'\[\[([a-z0-9_]+)\|([^\]]+)\]\]', stash, t)
     t = syms(t)
     def link(m):
-        return '<span class="term" data-t="%s">%s</span>' % (m.group(1), m.group(2))
-    t = re.sub(r'\[\[([a-z0-9_]+)\|([^\]]+)\]\]', link, t)
-    # a_n, {a_n}, 단일 라틴 문자 -> 이탤릭 (링크 안쪽은 건드리지 않음)
-    parts = re.split(r'(<span class="term"[^>]*>.*?</span>)', t)
+        return '<span class="term" data-t="%s">%s</span>' % (ids[int(m.group(1))], m.group(2))
+    t = re.sub(r'\[\[\x00(\d+)\x01\|([^\]]+)\]\]', link, t)
+    # a_n, {a_n}, 단일 라틴 문자 -> 이탤릭.
+    # 링크 span 과 엔티티는 구분자로 떼어내 원문 그대로 둔다 —
+    # &minus; 의 'm' 이 이탤릭이 되면 엔티티가 깨져 화면에 글자로 노출된다.
+    parts = re.split(r'(<span class="term"[^>]*>.*?</span>|' + ENT + r')', t)
     for i, p in enumerate(parts):
-        if p.startswith('<span class="term"'): continue
-        p = re.sub(r'\b([A-Za-z])(_\{?[A-Za-z0-9]+\}?)?', lambda m: mathify(m.group(0)), p)
-        parts[i] = p
+        if i % 2: continue
+        parts[i] = re.sub(r'\b([A-Za-z])(_\{?[A-Za-z0-9]+\}?)?', lambda m: mathify(m.group(0)), p)
     return ''.join(parts)
 
 def front(txt, f):
@@ -173,10 +190,38 @@ def main():
     print('팁개념 %d개, 개념 %d개 읽음' % (len(tips), len(pages)))
     out = os.path.join(ROOT, 'content-data.json')
     data = {'tips': tips, 'pages': pages}
+    render_check(data)
     json.dump(data, open(out,'w',encoding='utf-8'), ensure_ascii=False, indent=1)
     print('중간 산출물:', out)
 
     inject(data)
+
+
+def render_check(data):
+    """렌더 결과가 조용히 깨진 곳을 찾는다.
+
+    위의 링크 검증은 *생성된* data-t 만 팁 파일과 대조한다. 그래서 링크가
+    아예 생성되지 않은 경우와 기호 엔티티가 문자 단위로 쪼개진 경우는
+    검사 대상에조차 오르지 못한다 — exit 0 이 나오고 화면만 깨진다.
+    그 두 유형을 여기서 막는다.
+    """
+    bad = []
+    def walk(o, path=''):
+        if isinstance(o, dict):
+            for k, v in o.items(): walk(v, '%s/%s' % (path, k))
+        elif isinstance(o, list):
+            for i, v in enumerate(o): walk(v, '%s[%d]' % (path, i))
+        elif isinstance(o, str):
+            if '[[' in o:
+                bad.append((path, '링크가 만들어지지 않고 대괄호가 남았습니다'))
+            if re.search(r'&<span|<span class="m">&</span>', o):
+                bad.append((path, '기호 엔티티가 쪼개졌습니다 (화면에 &#... 이 글자로 보입니다)'))
+            if '\x00' in o or '\x01' in o:
+                bad.append((path, '내부 자리표시자가 남았습니다'))
+    walk(data)
+    if bad:
+        for path, msg in bad: print('  %s : %s' % (path, msg))
+        err('렌더 결과가 깨진 곳이 있습니다 (위 목록)')
 
 
 BEGIN = '/*DATA:BEGIN*/'
