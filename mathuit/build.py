@@ -142,6 +142,9 @@ def parse_tip(path):
                  'lines': lines, 'lab': {'x': lx, 'y': ly, 'a': at, 't': syms(g.get('label',''))},
                  'steps': steps, 'rel': meta.get('related', []), 'nograph': not bool(gm)}
 
+# order 는 정수가 아니라 실수다. 개념은 파일번호와 같은 정수를 쓰지만(c07 → 7),
+# 퀴즈처럼 개념 사이에 끼우는 화면은 5.5 같은 값으로 넣어야 앞뒤 개념의 번호를
+# 전부 밀지 않아도 된다. 파일번호=order 관례를 깨지 않기 위한 선택이다.
 def parse_concept(path):
     f = os.path.basename(path)
     meta, body = front(open(path, encoding='utf-8').read(), f)
@@ -151,7 +154,7 @@ def parse_concept(path):
         options = []
         for i in range(1, 6):
             options.append(meta.get('option%d' % i, ''))
-        return {'id': f[:-3], 'order': int(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
+        return {'id': f[:-3], 'order': float(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
                 'sec': meta['sec'], 'title': meta['title'], 'kind': 'quiz',
                 'question': meta.get('question', ''), 'problemEq': meta.get('problemEq', ''),
                 'options': options, 'answer': int(meta.get('answer', 1)),
@@ -176,7 +179,7 @@ def parse_concept(path):
     # 이 관계는 콘텐츠의 일부다 — check.py 가 존재·순서를 검사한다.
     pre = meta.get('prereq', [])
     if isinstance(pre, str): pre = [x.strip() for x in pre.split(',') if x.strip()]
-    return {'id': f[:-3], 'order': int(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
+    return {'id': f[:-3], 'order': float(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
             'sec': meta['sec'], 'title': meta['title'], 'pre': pre,
             'p1': prose(before), 'p2': prose(after), 'eqL': eqL, 'eqR': eqR}
 

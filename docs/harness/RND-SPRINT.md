@@ -46,6 +46,28 @@ mathuit의 명시된 미션은 *"지식은 순서도(절차) 형태로 표현하
 | 2 | 마이그레이션을 순서 독립으로 (릴리스 2단계 제약 제거) | 완료 |
 | 3 | 선수 개념(prereq) 스키마 + 근거 사슬을 기계가 읽게 | 완료 |
 | 4 | 단원 I 순서 정정 + c17→c19 역방향 의존 해소 | 완료 |
-| 5 | 하드코딩 퀴즈 제거 / 팝업 잘림 수정 | |
+| 5 | 하드코딩 퀴즈를 콘텐츠로 + 채점 없던 문제 수정 | 완료 |
 
 출처: [콴다 App Store](https://apps.apple.com/kr/app/%EC%BD%B4%EB%8B%A4-qanda-%EC%88%98%ED%95%99-%EB%AC%B8%EC%A0%9C-%ED%92%80%EC%9D%B4-ai-%EA%B3%B5%EB%B6%80%EC%95%B1/id1270676408) · [수학대왕·콴다 비교](https://crympk.com/entry/%EC%B5%9C%EC%83%81%EC%9C%84%EA%B6%8C%EC%9D%B4-%EC%93%B0%EB%8A%94-%EB%AC%B4%EB%A3%8C-%EA%B3%B5%EB%B6%80-%EC%96%B4%ED%94%8C-%EC%88%98%ED%95%99-%EB%8C%80%EC%99%95-%EC%BD%B4%EB%8B%A4-%EC%97%B4%ED%92%88%ED%83%80) · [Brilliant 분석](https://screensdesign.com/showcase/brilliant-learn-by-doing) · [CogniTrace 선수관계 그래프](https://cognitrace.ai/blog/prerequisite-graphs.html) · [Open Knowledge Graph](https://openknowledgegraph.com/) · [Knewton Knowledge Graphs](https://medium.com/knerd/what-are-knewtons-knowledge-graphs-f6a118acc722)
+
+
+---
+
+## 회차 2~5 요약
+
+| 회차 | 한 일 | 어떻게 확인했나 |
+|---|---|---|
+| 2 | 필기 마이그레이션을 콘텐츠 순서와 분리(`INK_LEGACY_ORDER`) | 순서를 뒤집어 실행 — 고정목록 c03·c14·c44 유지 / 옛 방식 c56·c45·c15 오배치 |
+| 3 | 선수 개념(`prereq`) 스키마 + `check.py` 가 뒤 개념 참조를 막음 | 위반 3종(없는 id·자기참조·뒤 개념)을 일부러 넣어 전부 잡히는 것 확인 |
+| 4 | 단원 I 절 뒤섞임 정정, 연쇄법칙(c19)을 로그함수 미분 앞으로 | 브라우저로 목차 확인. 재배치 후 옛 필기가 c08·c17 제자리 유지(회차 2 실증) |
+| 5 | 하드코딩 퀴즈 → `content/concept/q01.md`, 채점 로직 추가 | 브라우저에서 오답·정답 클릭. 오답 시 정답이 함께 드러남 |
+
+### 회차 5 에서 새로 드러난 것
+
+`answer` 필드는 `build.py` 가 읽고 미니 에디터가 입력까지 받는데, **화면에서는 쓰이지 않았다.** 보기를 고르면 선택 표시와 효과음만 나고 맞았는지 틀렸는지 알려주지 않았다 — 앱의 유일한 확인 문제가 확인을 못 하고 있었다. 데이터·빌드는 멀쩡해서 `check.py` 로는 영원히 안 잡히는 종류다.
+
+### 남은 것
+
+- **팝업 잘림(APP-BUGS 버그 5)** — 이번 회차에 손대지 못했다. 그래프 있는 팁이 낮은 화면에서 스크롤해야 다 보이는데 그 힌트가 없다.
+- **선수 관계 나머지** — 본문이 명시적으로 인용한 15건만 넣었다. 전체 그래프는 저자 판단이 필요하다.
+- **경로를 화면에 드러내기** — 회차 1 의 결론(이길 수 있는 축)인데 아직 데이터만 갖췄고 UI 는 없다.
