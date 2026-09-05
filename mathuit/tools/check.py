@@ -74,6 +74,20 @@ def main():
     if dup:
         bad.append('개념 id 중복: %s — 필기가 서로 섞인다' % ' '.join(dup))
 
+    # prereq — 앱의 미션("새 내용은 이미 배운 것만으로 구성")을 기계가 집행하는 자리.
+    # 없는 개념을 가리키거나, 자기 자신을 가리키거나, 아직 안 배운 뒤 개념을
+    # 가리키면 근거 사슬이 끊긴다. 빌드는 이걸 못 본다.
+    byid = {p['id']: p for p in d['pages'] if p.get('id')}
+    for p in d['pages']:
+        for q in p.get('pre', []):
+            if q == p.get('id'):
+                bad.append('%s 의 prereq 가 자기 자신이다' % p['id'])
+            elif q not in byid:
+                bad.append('%s 의 prereq "%s" 가 없는 개념이다' % (p['id'], q))
+            elif byid[q]['order'] >= p['order']:
+                bad.append('%s(order %s) 가 뒤 개념 %s(order %s) 를 prereq 로 든다 — 아직 안 배운 것에 기댄다'
+                           % (p['id'], p['order'], q, byid[q]['order']))
+
     if bad:
         print()
         for b in bad: print('  ' + b)

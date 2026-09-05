@@ -170,8 +170,14 @@ def parse_concept(path):
     # id 는 파일명(c07 등)이다. 화면 순서(order)와 달리 콘텐츠를 재배치해도
     # 변하지 않으므로, 앱이 사용자 데이터(필기·마지막 위치)를 붙여 두는 키로 쓴다.
     # 인덱스로 저장하면 단원을 하나 끼워 넣는 순간 남의 개념으로 옮겨 붙는다.
+    # prereq: 이 개념이 기대는 앞 개념들(id 목록). 지금까지 이 의존은 본문 문장에만
+    # 있어서("앞의 합성함수 미분법에서 ...") 기계가 읽지 못했고, 근거 사슬이 끊겨도
+    # 빌드가 통과했다. 앱의 미션이 "새 내용은 이미 배운 것만으로 구성"이므로
+    # 이 관계는 콘텐츠의 일부다 — check.py 가 존재·순서를 검사한다.
+    pre = meta.get('prereq', [])
+    if isinstance(pre, str): pre = [x.strip() for x in pre.split(',') if x.strip()]
     return {'id': f[:-3], 'order': int(meta.get('order', 999)), 'no': meta['no'], 'unit': meta['unit'],
-            'sec': meta['sec'], 'title': meta['title'],
+            'sec': meta['sec'], 'title': meta['title'], 'pre': pre,
             'p1': prose(before), 'p2': prose(after), 'eqL': eqL, 'eqR': eqR}
 
 def main():
