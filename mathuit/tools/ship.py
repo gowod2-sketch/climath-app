@@ -11,7 +11,11 @@ import glob, json, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = os.path.dirname(ROOT)
-WS = os.path.join(REPO, '_workspace')
+# _workspace/ 의 정본 위치는 mathuit/_workspace/ 다 (저장소 루트가 아니다).
+# 예전에 이 상수가 REPO 기준으로 잘못 잡혀 있어, 저장소 루트에 남아 있던
+# 옛 회차의 _workspace/(이미 해소된 에스컬레이션이 문서에는 그대로 적힌 채
+# 남은 파일)를 "최신 인벤토리"로 잘못 읽어 배포를 막은 적이 있다.
+WS = os.path.join(ROOT, '_workspace')
 
 def sh(cmd, cwd=None):
     return subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True)
@@ -60,9 +64,12 @@ def gate():
     # 4) 미해결 에스컬레이션 — 그 단원을 실제로 출고하려 할 때만 본다
     if inv and 'present' in dir() and present:
         txt = open(inv[-1], encoding='utf-8').read()
-        m = re.search(r'^## 에스컬레이션(.*)', txt, re.S | re.M)
+        # 다음 '## ' 헤더 앞에서 멈춘다 — 안 그러면 이후의 다른 절(예: 오케스트레이터
+        # 결정, 1차 에스컬레이션 처리 현황)까지 전부 이 절로 오인해 스캔한다.
+        m = re.search(r'^## 에스컬레이션\s*\n(.*?)(?=^## |\Z)', txt, re.S | re.M)
         if m and m.group(1).strip() and '없음' not in m.group(1)[:40]:
-            n = len(re.findall(r'^\d+\.', m.group(1), re.M))
+            # 번호가 굵게 표시된 항목(**1. ...**)도 같은 항목이니 함께 센다.
+            n = len(re.findall(r'^\**\d+\.', m.group(1), re.M))
             if n: blocks.append(('미해결 에스컬레이션 %d건 — 사람 결정 대기' % n, ''))
 
     # 5) 푸시 안 된 커밋
