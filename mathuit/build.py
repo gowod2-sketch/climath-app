@@ -24,11 +24,20 @@ def syms(t):
         t = t.replace(a,b)
     return t
 
+ENTITY = re.compile(r'&[#a-zA-Z0-9]+;')
+
 def mathify(t):
     """변수는 이탤릭, 함수명/숫자/기호는 로만."""
     t = syms(t)
     out, i = [], 0
     while i < len(t):
+        # syms()가 만든 HTML 엔티티(&#8721; 등)는 통째로 넘긴다.
+        # 문자 단위로 쪼개면 각 글자가 span에 갇혀 엔티티로 해석되지 않고
+        # 화면에 &#8721; 이 그대로 나온다.
+        m = ENTITY.match(t[i:])
+        if m:
+            out.append('<span class="m">%s</span>' % m.group(0))
+            i += len(m.group(0)); continue
         m = re.match(r'[A-Za-z]+', t[i:])
         if m:
             w = m.group(0)
@@ -54,16 +63,28 @@ def mathify(t):
 
 def prose(t):
     """본문: [[id|글자]] 링크 + 기호 + 단일 변수 이탤릭."""
+    # 링크를 syms() 전에 빼둔다. sum/oo/alpha 같은 SYM 문자열이 팁 id에
+    # 들어 있으면(예: sumval) syms()가 먼저 치환해 버려 링크 정규식에
+    # 걸리지 않고, data-t 가 생성조차 안 된다. 그러면 빌드의 "없는 팁"
+    # 검사에도 안 걸려 exit 0 인 채로 화면에 [[...]] 가 그대로 나온다.
+    held = []
+    def hold(m):
+        held.append((m.group(1), m.group(2)))
+        return '\x00%d\x00' % (len(held) - 1)
+    t = re.sub(r'\[\[([a-z0-9_]+)\|([^\]]+)\]\]', hold, t)
     t = syms(t)
-    def link(m):
-        return '<span class="term" data-t="%s">%s</span>' % (m.group(1), m.group(2))
-    t = re.sub(r'\[\[([a-z0-9_]+)\|([^\]]+)\]\]', link, t)
-    # a_n, {a_n}, 단일 라틴 문자 -> 이탤릭 (링크 안쪽은 건드리지 않음)
-    parts = re.split(r'(<span class="term"[^>]*>.*?</span>)', t)
+    # a_n, {a_n}, 단일 라틴 문자 -> 이탤릭
+    # 링크와 엔티티는 건드리지 않는다. &minus; 의 m 이 이탤릭 처리되면
+    # 엔티티가 깨져 화면에 &minus; 가 글자로 나온다.
+    parts = re.split(r'(\x00\d+\x00|&[#a-zA-Z0-9]+;)', t)
     for i, p in enumerate(parts):
-        if p.startswith('<span class="term"'): continue
-        p = re.sub(r'\b([A-Za-z])(_\{?[A-Za-z0-9]+\}?)?', lambda m: mathify(m.group(0)), p)
-        parts[i] = p
+        if ENTITY.fullmatch(p): continue
+        m = re.fullmatch(r'\x00(\d+)\x00', p)
+        if m:
+            tid, label = held[int(m.group(1))]
+            parts[i] = '<span class="term" data-t="%s">%s</span>' % (tid, syms(label))
+            continue
+        parts[i] = re.sub(r'\b([A-Za-z])(_\{?[A-Za-z0-9]+\}?)?', lambda mm: mathify(mm.group(0)), p)
     return ''.join(parts)
 
 def front(txt, f):
