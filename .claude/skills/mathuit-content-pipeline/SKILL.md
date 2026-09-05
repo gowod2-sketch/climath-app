@@ -106,7 +106,25 @@ python3 tools/shoot.py <인덱스...>           # 캡처
 **완료는 "build.py 통과"가 아니라 "사용자에게 도달"이다.** 이 구분이 없어서, 콘텐츠를 고치고 push 했는데 사이트가 git에 연결돼 있지 않아 12일째 아무것도 나가지 않은 상태를 아무도 눈치채지 못했다. 그동안 빌드는 계속 초록불이었다.
 
 ```bash
-cd mathuit && python3 tools/deploy_status.py
+cd mathuit && python3 tools/ship.py            # 게이트만
+cd mathuit && python3 tools/ship.py --deploy   # 통과 시 배포
+cd mathuit && python3 tools/deploy_status.py   # 사이트 연결 상태
+```
+
+**배포 여부를 사람에게 묻지 마라.** `ship.py` 가 규칙으로 판정한다. 막는 조건:
+
+| 조건 | 왜 |
+|---|---|
+| 콘텐츠 검증 실패 | 렌더가 깨진다 |
+| **계획된 개념 미생성** | 단원을 반쯤 출고하면 근거 사슬이 끊긴다 |
+| 미해결 에스컬레이션 | 사람 결정이 반영되지 않았다 |
+| 푸시 안 된 커밋 | 올라간 것과 배포될 것이 다르다 |
+
+게이트에 막혔을 때 **버그 수정만 먼저 내보내는 것은 판단이 아니라 절차다.** 콘텐츠를 뺀 브랜치를 만들면 콘텐츠 게이트가 통과한다:
+
+```bash
+git checkout -b fix-only origin/main
+git checkout <작업브랜치> -- mathuit/build.py mathuit/tools/
 ```
 
 확인할 것:
