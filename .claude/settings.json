@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git ls-files:*)",
+      "Bash(python3 build.py:*)",
+      "Bash(python3 tools/check.py:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(comm:*)",
+      "Bash(diff:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "콘텐츠 검증 중",
+            "timeout": 60,
+            "command": "jq -r \".tool_input.file_path // .tool_response.filePath // empty\" | { read -r f; case \"$f\" in */mathuit/content/*.md) ;; *) exit 0;; esac; root=\"${f%%/mathuit/content/*}\"; cd \"$root/mathuit\" 2>/dev/null || exit 0; out=$(python3 tools/check.py 2>&1) || printf \"%s\" \"$out\" | jq -Rs \"{decision:\\\"block\\\", reason:(\\\"콘텐츠 검증 실패 — 고쳐야 합니다:\\n\\\"+.)}\"; }"
+          }
+        ]
+      }
+    ]
+  }
+}

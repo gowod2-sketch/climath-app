@@ -1,7 +1,7 @@
 ---
 title: 밑
 icon: a
-oneline: 지수함수 y=a^x 에서 밑이 되는 양수 a (a≠1)
+oneline: 지수함수 y=a^x 와 로그함수에서 기준이 되는 양수 a (a≠1)
 related: [expfunc]
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: 부정형
 icon: ?
-oneline: oo/oo, oo-oo 처럼 그대로는 값을 알 수 없는 꼴
+oneline: 0/0, oo/oo, oo-oo 처럼 그대로는 값을 알 수 없는 꼴
 related: [degree, diverge]
 ---
 

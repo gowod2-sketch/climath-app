@@ -108,12 +108,15 @@ def parse_tip(path):
     meta, body = front(open(path, encoding='utf-8').read(), f)
     for k in ('title','oneline'):
         if k not in meta: err('%s 가 없습니다' % k, f)
+    # graph 는 선택이다. 수열 산점도로 표현되지 않는 개념(항등식, 식 변형,
+    # 경우의 수, 행렬 ...)이 많아 필수로 두면 그런 팁은 아예 만들 수 없거나
+    # 틀린 그림을 지어내게 된다. graph 가 없으면 steps 만으로 렌더한다.
     g = {}
     gm = re.search(r'##\s*graph(.*?)(?=##|\Z)', body, re.S)
-    if not gm: err('## graph 블록이 없습니다', f)
-    for line in gm.group(1).strip().splitlines():
-        if ':' not in line: continue
-        k, v = line.split(':', 1); g[k.strip()] = v.strip()
+    if gm:
+        for line in gm.group(1).strip().splitlines():
+            if ':' not in line: continue
+            k, v = line.split(':', 1); g[k.strip()] = v.strip()
     sm = re.search(r'##\s*steps(.*?)(?=##|\Z)', body, re.S)
     if not sm: err('## steps 블록이 없습니다', f)
     steps = []
@@ -135,9 +138,9 @@ def parse_tip(path):
     lx = {'end': 288, 'start': 30, 'middle': 160}[at]
     ly = (lines[0] - 8) if lines else 30
     return tid, {'title': meta['title'], 'cat': '팁개념', 'ic': syms(meta.get('icon','•')),
-                 'def': prose(meta['oneline']), 'curve': g.get('curve','60 + 80/n'),
+                 'def': prose(meta['oneline']), 'curve': g.get('curve', ''),
                  'lines': lines, 'lab': {'x': lx, 'y': ly, 'a': at, 't': syms(g.get('label',''))},
-                 'steps': steps, 'rel': meta.get('related', [])}
+                 'steps': steps, 'rel': meta.get('related', []), 'nograph': not bool(gm)}
 
 def parse_concept(path):
     f = os.path.basename(path)
