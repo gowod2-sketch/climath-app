@@ -52,7 +52,13 @@ def gate():
     # 3) 계획 대비 누락 — 단원을 반쯤 출고하면 근거 사슬이 끊긴다.
     #    실제로 c14 가 빠진 채 c15 가 나가서, c15 본문이 근거로 삼는
     #    극한을 설명할 화면이 앱에 하나도 없는 상태가 됐다.
-    inv = sorted(glob.glob(os.path.join(WS, '01_*inventory*.md')))
+    # "최신"은 파일명 정렬이 아니라 수정 시각으로 고른다 — 지난 단원 인벤토리를
+    # `..._docs03.md`/`..._docs04.md`로 보존해 두는 관례를 쓰면, 그 파일명들이
+    # 알파벳상 기본 파일명(`01_spec-analyst_inventory.md`)보다 뒤에 와서
+    # sorted(...)[-1]이 옛 백업을 "최신"으로 잘못 골랐다(실제로 한 번 이걸로
+    # 이미 해소된 에스컬레이션을 다시 미해결로 오판해 배포를 막았다).
+    _cand = glob.glob(os.path.join(WS, '01_*inventory*.md'))
+    inv = [max(_cand, key=os.path.getmtime)] if _cand else []
     if inv:
         txt = open(inv[-1], encoding='utf-8').read()
         m = re.search(r'^## 개념 목록(.*?)^## ', txt, re.S | re.M)
