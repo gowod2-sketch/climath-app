@@ -26,7 +26,18 @@ def gate():
     if r.returncode != 0:
         blocks.append(('콘텐츠 검증 실패', r.stdout.strip()))
 
-    # 2) 계획 대비 누락 — 단원을 반쯤 출고하면 근거 사슬이 끊긴다.
+    # 2) 화면 — 데이터가 맞아도 그려진 결과는 다를 수 있다.
+    #    shoot.py 가 각 화면을 검사해 파손을 ⚠ 로 표시한다.
+    r = subprocess.run([sys.executable, 'tools/shoot.py', '--all'], cwd=ROOT,
+                       capture_output=True, text=True, timeout=600)
+    bad = [ln.strip() for ln in (r.stdout or '').splitlines() if '⚠' in ln]
+    if bad:
+        blocks.append(('화면 파손 %d건' % len(bad), '\n'.join('  ' + b for b in bad)))
+    elif r.returncode != 0:
+        blocks.append(('화면 확인 실패 — 크롬을 못 찾았거나 캡처가 죽었다',
+                       (r.stdout or r.stderr).strip()[-400:]))
+
+    # 3) 계획 대비 누락 — 단원을 반쯤 출고하면 근거 사슬이 끊긴다.
     #    실제로 c14 가 빠진 채 c15 가 나가서, c15 본문이 근거로 삼는
     #    극한을 설명할 화면이 앱에 하나도 없는 상태가 됐다.
     inv = sorted(glob.glob(os.path.join(WS, '01_*inventory*.md')))
@@ -40,7 +51,7 @@ def gate():
             blocks.append(('계획된 개념 미생성 — 단원을 반쯤 출고하면 근거가 끊긴다',
                            '  누락: %s\n  인벤토리: %s' % (' '.join(missing), os.path.basename(inv[-1]))))
 
-    # 3) 미해결 에스컬레이션
+    # 4) 미해결 에스컬레이션
     if inv:
         txt = open(inv[-1], encoding='utf-8').read()
         m = re.search(r'^## 에스컬레이션(.*)', txt, re.S | re.M)
@@ -48,7 +59,7 @@ def gate():
             n = len(re.findall(r'^\d+\.', m.group(1), re.M))
             if n: blocks.append(('미해결 에스컬레이션 %d건 — 사람 결정 대기' % n, ''))
 
-    # 4) 푸시 안 된 커밋
+    # 5) 푸시 안 된 커밋
     a = sh("git rev-list --count @{u}..HEAD", REPO)
     if a.returncode == 0 and a.stdout.strip() not in ('', '0'):
         blocks.append(('푸시되지 않은 커밋 %s개' % a.stdout.strip(), ''))
@@ -77,8 +88,14 @@ def main():
         return 2
     print("\n=== 배포 ===")
     r = sh("netlify deploy --prod --dir=dist", ROOT)
-    print(r.stdout[-1500:] or r.stderr[-1500:])
-    return r.returncode
+    print(r.stdout[-1200:] or r.stderr[-1200:])
+    if r.returncode != 0:
+        return r.returncode
+
+    # 배포했다고 도달한 것이 아니다 — 실제로 확인한다.
+    print("\n=== 도달 확인 ===")
+    subprocess.run([sys.executable, 'tools/deploy_status.py'], cwd=ROOT)
+    return 0
 
 if __name__ == '__main__':
     sys.exit(main())
