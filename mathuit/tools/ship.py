@@ -40,14 +40,28 @@ def gate():
 
     # 2) 화면 — 데이터가 맞아도 그려진 결과는 다를 수 있다.
     #    shoot.py 가 각 화면을 검사해 파손을 ⚠ 로 표시한다.
+    #
+    #    "화면이 깨졌다"와 "화면을 확인할 수 없다"는 다른 사건이다. 앞은 언제나
+    #    막아야 하지만, 뒤는 환경 문제일 수 있다(윈도우에서 헤드리스 크롬이
+    #    응답하지 않는 사례가 실제로 있었다). 뒤까지 무조건 막으면 그 머신에서는
+    #    게이트가 영구 적색이 되고, 결국 게이트 자체를 우회하게 된다 — 그게 더 나쁘다.
+    #    그래서 캡처 불가에 한해 "사람이 직접 봤다"는 진술로 통과시키되,
+    #    무엇을 어떻게 봤는지 문구를 반드시 남기게 한다(--screens-verified="...").
+    verified = next((a.split('=', 1)[1] for a in sys.argv
+                     if a.startswith('--screens-verified=') and len(a.split('=', 1)[1].strip()) >= 10), None)
     r = subprocess.run([sys.executable, 'tools/shoot.py', '--all'], cwd=ROOT,
                        capture_output=True, text=True, timeout=600)
     bad = [ln.strip() for ln in (r.stdout or '').splitlines() if '⚠' in ln]
     if bad:
+        # 파손은 진술로 넘길 수 없다. 캡처가 됐고 그 결과가 깨졌다는 뜻이다.
         blocks.append(('화면 파손 %d건' % len(bad), '\n'.join('  ' + b for b in bad)))
     elif r.returncode != 0:
-        blocks.append(('화면 확인 실패 — 크롬을 못 찾았거나 캡처가 죽었다',
-                       (r.stdout or r.stderr).strip()[-400:]))
+        if verified:
+            print('  · 화면 캡처 불가 — 수동 확인 진술로 대체: %s' % verified)
+        else:
+            blocks.append(('화면 확인 실패 — 크롬을 못 찾았거나 캡처가 죽었다',
+                           (r.stdout or r.stderr).strip()[-400:] +
+                           '\n  직접 눈으로 확인했다면: --screens-verified="무엇을 어떻게 봤는지" (10자 이상)'))
 
     # 3) 계획 대비 누락 — 단원을 반쯤 출고하면 근거 사슬이 끊긴다.
     #    실제로 c14 가 빠진 채 c15 가 나가서, c15 본문이 근거로 삼는
