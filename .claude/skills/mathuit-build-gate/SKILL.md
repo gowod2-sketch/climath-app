@@ -20,7 +20,7 @@ cd mathuit && python3 build.py
 | concept | `no, title, unit, sec` 존재 | `{키} 가 없습니다` |
 | concept | `$$ 수식 $$` 존재 | `$$ 수식 $$ 이 없습니다` |
 | tip | `title, oneline` 존재 | `{키} 가 없습니다` |
-| tip | `## graph` 블록 존재 | `## graph 블록이 없습니다` |
+| tip | `## graph` 블록 | **선택** — 없으면 `curve:''`, `nograph:true`로 채워지고 그래프 없이 렌더된다. 검증 대상 아님 |
 | tip | `## steps` 블록 존재 | `## steps 블록이 없습니다` |
 | steps | `show` 칸이 정수 | `show 칸은 숫자여야 합니다` |
 | steps | 1줄 이상 | `스텝이 한 줄도 없습니다` |
