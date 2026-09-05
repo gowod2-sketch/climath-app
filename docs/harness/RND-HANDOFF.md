@@ -1,0 +1,1 @@
+$(cat /home/user/climath-app/docs/harness/RND-HANDOFF.md)
