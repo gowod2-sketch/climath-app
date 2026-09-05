@@ -2,7 +2,7 @@
 title: 항등식
 icon: ≡
 oneline: 변수에 어떤 값을 넣어도 항상 성립하는 등식
-related: [pythagoras, trigfunc]
+related: [pythagoras, trigfunc, mulform, factorize]
 ---
 
 ## steps
