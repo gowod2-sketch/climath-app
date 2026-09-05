@@ -1,6 +1,6 @@
 ---
 title: 반각공식
-icon: θ/2
+icon: ½
 oneline: 절반으로 줄인 각의 삼각함수 값을 원래 각의 값으로 나타낸 식
 related: [doubleangle, identity]
 ---
