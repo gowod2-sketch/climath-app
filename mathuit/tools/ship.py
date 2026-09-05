@@ -24,11 +24,19 @@ def gate():
     """배포를 막아야 하는 조건들. 통과하면 [] 를 돌려준다."""
     blocks = []
 
-    # 1) 형식·데이터 — check.py 가 본다
+    # 1) 형식·데이터 — check.py 가 본다 (내부에서 build.py를 실행해 index.html을 재생성한다)
     r = subprocess.run([sys.executable, 'tools/check.py'], cwd=ROOT,
                        capture_output=True, text=True)
     if r.returncode != 0:
         blocks.append(('콘텐츠 검증 실패', r.stdout.strip()))
+
+    # 1.5) index.html이 재생성 후에도 커밋된 것과 다르면, content/*.md는 고쳤는데
+    #    build.py로 다시 만든 index.html을 커밋에 안 넣은 것이다. 실제로 한 번
+    #    있었다 — 소스 md는 고쳤지만 index.html의 DATA는 예전 값 그대로 배포될
+    #    뻔했다. git diff로 감지한다(ROOT는 mathuit/, index.html은 그 바로 아래).
+    d = sh("git diff --quiet -- index.html", ROOT)
+    if d.returncode != 0:
+        blocks.append(('index.html이 최신 content/*.md와 어긋난다 — build.py 재실행 후 다시 커밋할 것', ''))
 
     # 2) 화면 — 데이터가 맞아도 그려진 결과는 다를 수 있다.
     #    shoot.py 가 각 화면을 검사해 파손을 ⚠ 로 표시한다.
