@@ -11,6 +11,8 @@ description: "이 저장소에서 docs/ 수학 명세를 mathuit/content/ 앱 �
 
 이 저장소 환경에는 에이전트 팀 도구가 없다. `Agent` 도구로 직접 호출하고 반환값과 `_workspace/` 파일로 결과를 수집한다.
 
+**`_workspace/`의 정확한 위치는 `mathuit/_workspace/`다 (저장소 루트의 `_workspace/`가 아니다).** 이 문서 전체의 `_workspace/`는 전부 이 경로의 축약이다. 저장소 루트에도 같은 이름의 `_workspace/`가 있을 수 있는데, 이건 예전 회차가 cwd를 `mathuit/`가 아닌 저장소 루트로 잡고 실행한 흔적이다 — 둘 다 `.gitignore`에 걸려 커밋되지 않으므로 남아 있어도 무해하지만, 새 에이전트를 호출할 때는 반드시 절대경로(`/home/user/climath-app/mathuit/_workspace/...` 또는 그에 준하는 명시적 경로)로 지시해 두 위치가 또 갈라지지 않게 하라.
+
 ## 에이전트 구성
 
 | 에이전트 | subagent_type | 역할 | 스킬 | 출력 |
