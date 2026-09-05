@@ -89,7 +89,19 @@ description: "이 저장소에서 docs/ 수학 명세를 mathuit/content/ 앱 �
 
 둘 다 통과할 때까지 반복한다.
 
-### Phase 6: 정리
+### Phase 6: 화면 확인
+데이터가 맞아도 **그려진 화면은 다를 수 있다.** `mathuit-app-check` 절차로 새로 만들거나 고친 개념을 실제로 띄워 본다.
+
+```bash
+cd mathuit && python3 tools/shoot.py        # 실제 화면 순서
+python3 tools/shoot.py <인덱스...>           # 캡처
+```
+
+캡처 이미지를 **실제로 열어서 보라.** 자동 판정(`⚠`)은 알려진 파손 3종만 본다.
+
+주의: `index.html`이 콘텐츠에 퀴즈가 없으면 샘플 퀴즈를 3번째 자리에 끼워 넣으므로 화면 인덱스가 파일 순서와 어긋난다. `shoot.py` 출력의 순서를 쓸 것.
+
+### Phase 7: 정리
 1. `git status`로 `index.html` 변경 여부 확인 (build.py가 데이터 블록을 갈아끼운다)
 2. `_workspace/` 보존
 3. 생성/수정 파일 목록과 미해결 에스컬레이션 요약 보고
