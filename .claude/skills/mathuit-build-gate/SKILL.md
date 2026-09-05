@@ -117,6 +117,10 @@ comm -23 /tmp/planned.txt /tmp/made.txt   # 계획됐는데 없음 ← 이 방�
 
 이 항목들은 **차단이 아니라 보고**다. 판단은 사람이 한다.
 
+## 통과가 배포는 아니다
+
+`build.py`가 exit 0을 내도 그것은 **형식이 맞다**는 뜻일 뿐이다. 화면이 맞는지는 `mathuit-app-check`가, 사용자에게 도달했는지는 `tools/deploy_status.py`가 본다. 세 층이 다르다.
+
 ## index.html이 함께 바뀐다
 
 `build.py`는 검사만 하는 게 아니라 `index.html` 안의 `/*DATA:BEGIN*/` 데이터 블록을 갈아끼운다. 검증 목적으로 돌려도 **`index.html`이 수정된다.**

@@ -136,7 +136,10 @@ label_at: right
 https://math-tip-popup.netlify.app/editor.html
 
 파일을 골라 불러오고, 고치고, **"저장하고 배포"** 를 누르면 끝입니다.
-GitHub 커밋과 배포가 자동으로 됩니다. 이 폴더를 직접 만질 필요가 없습니다.
+GitHub 커밋이 자동으로 됩니다. 이 폴더를 직접 만질 필요가 없습니다.
+
+다만 **커밋과 배포는 다릅니다.** 편집기는 GitHub에 커밋할 뿐이고, 그것이
+화면에 반영되려면 사이트가 git에 연결돼 있어야 합니다.
 
 ### 직접 파일을 고쳤다면
 
@@ -145,7 +148,15 @@ python3 build.py
 ```
 
 `content/` 를 읽어 검사하고 `index.html` 안의 `/*DATA:BEGIN*/` 데이터 블록을 갈아끼웁니다.
-그 다음 커밋하고 push하면 Netlify가 자동으로 배포합니다.
+그 다음 커밋하고 push합니다.
+
+**push가 곧 배포는 아닙니다.** 사이트가 git에 연결돼 있어야 자동 배포가 되고,
+연결이 없으면 커밋만 쌓이고 화면은 그대로입니다. 실제로 그런 상태가 12일간
+있었습니다. 배포가 됐는지 확인하려면:
+
+```
+python3 mathuit/tools/deploy_status.py
+```
 
 ```
 git add -A && git commit -m "개념 수정" && git push
