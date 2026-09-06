@@ -155,6 +155,7 @@ def parse_concept(path):
                 'sec': meta['sec'], 'title': meta['title'], 'kind': 'quiz',
                 'question': meta.get('question', ''), 'problemEq': meta.get('problemEq', ''),
                 'options': options, 'answer': int(meta.get('answer', 1)),
+                'sol': meta.get('sol', ''), 'src': meta.get('src', ''),
                 'p1': '', 'p2': '', 'eqL': '', 'eqR': ''}
     m = re.search(r'\$\$(.*?)\$\$', body, re.S)
     if not m: err('$$ 수식 $$ 이 없습니다', f)
