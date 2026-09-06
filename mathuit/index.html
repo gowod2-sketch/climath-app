@@ -161,6 +161,11 @@ body.pen .inkbar{display:flex;}
 <script>window.MathJax={tex:{inlineMath:[['$','$']]},options:{skipHtmlTags:['script','noscript','style','textarea','pre']}};</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js" defer></script>
 <style>.quizsrc{margin-top:14px;font-size:12px;color:var(--sub);opacity:.75}.solbtn{margin-top:18px;border:1px solid var(--line);background:var(--s1);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text)}.solbox{display:none;margin-top:14px;padding:16px;border-radius:12px;background:rgba(255,255,255,.55);font-size:14px;line-height:1.8}.solbox.on{display:block}.quizopt.correct{background:rgba(120,200,140,.28)}.quizopt.wrong{background:rgba(230,120,120,.22)}</style>
+<!-- 보기 배치를 CLIMATH 주간지 인쇄본의 \choices 매크로(①~⑤ 한 줄 나열,
+     짧으면 5열 한 줄·길면 자동으로 줄바꿈)와 같은 감각으로 맞춘다.
+     LaTeX는 짧다/길다를 저자가 \choices vs \choiceslong 중 골라야 하지만,
+     여기선 auto-fit grid로 폭에 맞춰 같은 결과를 자동으로 낸다. -->
+<style>.quizopts{grid-template-columns:repeat(auto-fit,minmax(64px,1fr))!important;gap:8px!important}.quizopt{text-align:center!important;border:1px solid var(--line)!important;border-radius:10px!important;padding:12px 10px!important;white-space:nowrap}.quiznum{position:static!important;transform:none!important;font-size:17px!important;margin-right:4px}.quizcheck{position:absolute!important;top:-6px!important;left:auto!important;right:-6px!important;width:20px!important;height:20px!important;transform:none!important}.quizopt.selected .quizcheck{transform:none!important}</style>
 </head>
 <body>
 <div class="update-pop" id="updatePop"><span>새 버전이 배포되었습니다.<br>지금 업데이트할까요?</span><button id="updateNow">업데이트</button><button id="updateLater" style="background:#4a516d">나중에</button></div>
