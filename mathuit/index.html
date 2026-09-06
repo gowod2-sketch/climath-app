@@ -160,7 +160,15 @@ body.pen .inkbar{display:flex;}
      (통합 인수인계 문서 §1 "수식 렌더러가 다르다" 절 참고). -->
 <script>window.MathJax={tex:{inlineMath:[['$','$']]},options:{skipHtmlTags:['script','noscript','style','textarea','pre']}};</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js" defer></script>
-<style>.quizsrc{margin-top:14px;font-size:12px;color:var(--sub);opacity:.75}.solbtn{margin-top:18px;border:1px solid var(--line);background:var(--s1);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text)}.solbox{display:none;margin-top:14px;padding:16px;border-radius:12px;background:rgba(255,255,255,.55);font-size:14px;line-height:1.8}.solbox.on{display:block}.quizopt.correct{background:rgba(120,200,140,.28)}.quizopt.wrong{background:rgba(230,120,120,.22)}</style>
+<style>.solbtn{margin-top:18px;border:1px solid var(--line);background:var(--s1);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text)}.solbox{display:none;margin-top:14px;padding:16px;border-radius:12px;background:rgba(255,255,255,.55);font-size:14px;line-height:1.8}.solbox.on{display:block}.quizopt.correct{background:rgba(120,200,140,.28)}.quizopt.wrong{background:rgba(230,120,120,.22)}</style>
+<!-- 문제 정보(번호·유형명·출처)를 인쇄본 \probcore처럼 한 줄로: 번호 오른쪽에
+     유형명, 그 줄 오른쪽 끝에 출처. 문제 본문(.qbig)은 더 크게. -->
+<style>.probhead{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:14px}.probno{display:inline-block;flex:none;font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:7px;padding:3px 9px;letter-spacing:.02em;white-space:nowrap}.probtype{font-size:17px;font-weight:700;letter-spacing:-.01em}.probsrc{margin-left:auto;font-size:12px;color:var(--sub);opacity:.75;white-space:nowrap}.quiz p.qbig{font-size:20px;line-height:1.85;margin:0 0 20px;font-weight:500}</style>
+<!-- 교재(book) 탭 — 목차 패널 안에서 "교과서"/"CLIMATH 주간지"를 골라
+     그 교재 첫 페이지로 바로 점프 + 목차 목록도 그 교재만 보여준다.
+     기존 스와이프(넘기기) 자체는 하나의 연속 덱 그대로 둔다 — 스와이프로
+     교재 경계를 완전히 막는 건 더 큰 리팩터라 이번엔 안 함(다음 세션 참고). -->
+<style>.booktabs{display:flex;gap:6px;padding:10px 16px 4px}.booktab{flex:1;border:1px solid var(--line);background:transparent;border-radius:9px;padding:8px 6px;font-size:12.5px;font-weight:700;color:var(--text2);cursor:pointer}.booktab.on{background:var(--accent);border-color:var(--accent);color:#fff}</style>
 <!-- 보기 배치를 CLIMATH 주간지 인쇄본의 \choices 매크로(①~⑤ 한 줄 나열,
      짧으면 5열 한 줄·길면 자동으로 줄바꿈)와 같은 감각으로 맞춘다.
      LaTeX는 짧다/길다를 저자가 \choices vs \choiceslong 중 골라야 하지만,
@@ -217,6 +225,7 @@ body.pen .inkbar{display:flex;}
   </div></div>
   <div class="toc" id="toc"><div class="tocpanel">
     <div class="tochead"><span style="font-size:15px;font-weight:700">목차</span><button id="tocClose" aria-label="닫기" style="border:none;background:none;font-size:18px;color:var(--text2);cursor:pointer;line-height:1">&times;</button></div>
+    <div class="booktabs" id="booktabs"></div>
     <div id="tocBody"></div>
   </div></div>
   <div class="inkbar"><span class="swatches" id="swatches"><button class="swatch on" data-c="#F2653E" style="--c:#F2653E" aria-label="코랄"></button><button class="swatch" data-c="#4C5FD5" style="--c:#4C5FD5" aria-label="인디고"></button><button class="swatch" data-c="#12A97A" style="--c:#12A97A" aria-label="초록"></button><button class="swatch" data-c="#F6A623" style="--c:#F6A623" aria-label="노랑"></button><button class="swatch" data-c="#1B2033" style="--c:#1B2033" aria-label="검정"></button></span><span class="inkdiv"></span><button class="tool" id="inkErase">지우개</button><button class="tool" id="inkUndo">되돌리기</button><button class="tool" id="inkClear">전체 지우기</button><button class="exit" id="inkDone">완료</button></div>
@@ -260,8 +269,9 @@ function eqHTML(p){
 function renderPageHTML(p){
  if(p.kind==='quiz'){var nums=['①','②','③','④','⑤'],vals=p.options||['0','1','∞','r','존재하지 않음'];
   var solPart=p.sol?('<button class="solbtn" type="button">해설 보기</button><div class="solbox">'+((p.sol||'').replace(/\n/g,'<br>'))+'</div>'):'';
-  var srcPart=p.src?('<div class="quizsrc">'+p.src+'</div>'):'';
-  return '<div class="zoomwrap"><div class="pad"><div class="kicker">'+p.no+'</div><div class="title">'+p.title+'</div><section class="quiz" aria-label="객관식 문제" data-ans="'+(p.answer||1)+'"><h3>확인 문제</h3><p>'+((p.question||'').replace(/\n/g,'<br>'))+'</p>'+((p.problemEq)?eqHTML({eqL:'',eqR:p.problemEq}):'')+'<div class="quizopts">'+vals.map(function(v,i){return '<button class="quizopt" type="button" data-i="'+(i+1)+'"><span class="quiznum">'+nums[i]+'</span><span>'+v+'</span><svg class="quizcheck" viewBox="0 0 32 32"><path d="M5 17 L13 25 L28 7"></path></svg></button>';}).join('')+'</div>'+srcPart+solPart+'</section></div></div><div class="zoombadge"></div>';}
+  var srcPart=p.src?('<span class="probsrc">'+p.src+'</span>'):'';
+  var head='<div class="probhead"><span class="probno">'+p.no+'</span><span class="probtype">'+p.title+'</span>'+srcPart+'</div>';
+  return '<div class="zoomwrap"><div class="pad">'+head+'<section class="quiz" aria-label="객관식 문제" data-ans="'+(p.answer||1)+'"><p class="qbig">'+((p.question||'').replace(/\n/g,'<br>'))+'</p>'+((p.problemEq)?eqHTML({eqL:'',eqR:p.problemEq}):'')+'<div class="quizopts">'+vals.map(function(v,i){return '<button class="quizopt" type="button" data-i="'+(i+1)+'"><span class="quiznum">'+nums[i]+'</span><span>'+v+'</span><svg class="quizcheck" viewBox="0 0 32 32"><path d="M5 17 L13 25 L28 7"></path></svg></button>';}).join('')+'</div>'+solPart+'</section></div></div><div class="zoombadge"></div>';}
  var quiz='';
  return '<div class="zoomwrap"><div class="pad"><div class="kicker">'+p.no+'</div><div class="title">'+p.title+'</div><p class="body">'+p.p1+'</p>'+eqHTML(p)+'<p class="body">'+p.p2+'</p>'+quiz+'</div></div><div class="zoombadge"></div>';
 }
@@ -618,10 +628,18 @@ document.querySelectorAll('.qa button').forEach(function(b){
  });
 });
 
-var toc=document.getElementById('toc'),tocBody=document.getElementById('tocBody');
-(function buildTOC(){
+var toc=document.getElementById('toc'),tocBody=document.getElementById('tocBody'),bookTabsEl=document.getElementById('booktabs');
+// 여러 교재(book) 지원 — 지금은 "교과서"(수열의 극한 등 I/II/III)와
+// "CLIMATH 주간지" 둘. unit 값으로 book을 가른다. 새 교재를 추가하면
+// bookKey/bookLabel에 한 줄씩 더할 것.
+function bookKey(u){ return (u==='CLIMATH 주간지') ? 'weekly' : 'main'; }
+function bookLabel(k){ return k==='weekly' ? 'CLIMATH 주간지' : '교과서'; }
+var BOOKKEYS=(function(){var seen={},out=[];PAGES.forEach(function(p){var k=bookKey(p.unit);if(!seen[k]){seen[k]=1;out.push(k);}});return out;})();
+var activeBook=BOOKKEYS[0]||'main';
+function renderTOCBody(book){
  var html='',lastSec=null;
  PAGES.forEach(function(p,i){
+  if(bookKey(p.unit)!==book) return;
   if(p.sec!==lastSec){ html+='<div class="tocsec">'+p.sec+'</div>'; lastSec=p.sec; }
   html+='<div class="tocitem" data-go="'+i+'"><span class="tocno">'+p.no+'</span><span class="toctitle">'+p.title+'</span><span class="tocmark" data-mark="'+i+'"></span></div>';
  });
@@ -633,7 +651,31 @@ var toc=document.getElementById('toc'),tocBody=document.getElementById('tocBody'
    if(t!==idx) animateTo(t); else apply();
   });
  });
-})();
+ markTOC();
+}
+function renderBookTabs(){
+ if(!bookTabsEl) return;
+ if(BOOKKEYS.length<2){ bookTabsEl.style.display='none'; return; }
+ bookTabsEl.innerHTML=BOOKKEYS.map(function(k){
+  return '<button class="booktab'+(k===activeBook?' on':'')+'" data-book="'+k+'" type="button">'+bookLabel(k)+'</button>';
+ }).join('');
+}
+function switchBook(book,jump){
+ activeBook=book; renderBookTabs(); renderTOCBody(activeBook);
+ if(jump){
+  var firstIdx=-1;
+  for(var i=0;i<PAGES.length;i++){ if(bookKey(PAGES[i].unit)===book){ firstIdx=i; break; } }
+  if(firstIdx>=0){ toc.classList.remove('on'); if(firstIdx!==idx) animateTo(firstIdx); }
+ }
+}
+if(bookTabsEl){
+ bookTabsEl.addEventListener('click',function(e){
+  var b=e.target.closest('.booktab'); if(!b) return;
+  switchBook(b.getAttribute('data-book'), true);
+ });
+}
+renderBookTabs();
+renderTOCBody(activeBook);
 function markTOC(){
  tocBody.querySelectorAll('[data-go]').forEach(function(el){
   el.classList.toggle('cur', +el.getAttribute('data-go')===idx);
@@ -703,7 +745,10 @@ function exportMini(){
 }
 function resetMini(){ openMiniEditor(); toast('원본값을 다시 불러왔습니다'); }
 document.getElementById('tocBtn').addEventListener('click',function(e){
- e.stopPropagation(); markTOC(); toc.classList.add('on');
+ e.stopPropagation();
+ var cur=PAGES[idx],curBook=cur?bookKey(cur.unit):activeBook;
+ if(curBook!==activeBook) switchBook(curBook,false); else markTOC();
+ toc.classList.add('on');
 });
 document.getElementById('tocClose').addEventListener('click',function(e){e.stopPropagation();toc.classList.remove('on');});
 toc.addEventListener('pointerdown',function(e){ e.stopPropagation(); if(e.target===toc) toc.classList.remove('on'); });
